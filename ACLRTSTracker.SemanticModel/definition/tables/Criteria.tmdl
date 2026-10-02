@@ -1,0 +1,145 @@
+table Criteria
+	lineageTag: 27469e79-4e5d-4dc0-8641-097959ffd8a8
+
+	column 'Phase ID'
+		dataType: string
+		lineageTag: 3f787bfa-0175-4e9c-8a39-15c5e75810d1
+		summarizeBy: none
+		sourceColumn: Phase ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Phase Name'
+		dataType: string
+		lineageTag: a65e3e13-5f23-4cb2-babf-86689750b938
+		summarizeBy: none
+		sourceColumn: Phase Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column Device
+		dataType: string
+		lineageTag: dd2500c9-857c-477c-b293-e025f478035d
+		summarizeBy: none
+		sourceColumn: Device
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Metric Name'
+		dataType: string
+		lineageTag: e770f148-876b-44ac-86db-d2c1b99125c2
+		summarizeBy: none
+		sourceColumn: Metric Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column Direction
+		dataType: string
+		lineageTag: 4064ec29-fc6a-4ee5-bb78-616b3c905b43
+		summarizeBy: none
+		sourceColumn: Direction
+
+		annotation SummarizationSetBy = Automatic
+
+	column Threshold
+		dataType: double
+		lineageTag: deffc01f-919b-4ffe-9b37-c88c8f69ed98
+		summarizeBy: sum
+		sourceColumn: Threshold
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Pre-Injury Value'
+		dataType: double
+		lineageTag: f30be160-fa62-4b62-a504-73f2ddbe18c7
+		summarizeBy: sum
+		sourceColumn: Pre-Injury Value
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Threshold Type'
+		dataType: string
+		lineageTag: 2c247971-4162-448f-9ca6-a463441d3827
+		summarizeBy: none
+		sourceColumn: Threshold Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Row ID'
+		dataType: int64
+		formatString: 0
+		lineageTag: a271b1d1-28dc-483c-b4b2-7217c10b40cb
+		summarizeBy: count
+		sourceColumn: Row ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Phase ID Num' = INT('Criteria'[Phase ID])
+		formatString: 0
+		lineageTag: 1210bfd8-7b0b-4d85-989e-39ef3453fb54
+		summarizeBy: sum
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Criteria Key' = 'Criteria'[Phase ID] & "-" & 'Criteria'[Metric Name]
+		lineageTag: 65f12bb3-191a-4e32-8035-5cb182b86b88
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Injury Type'
+		dataType: string
+		lineageTag: ba086b8c-c571-437c-8625-e7cfae899a60
+		summarizeBy: none
+		sourceColumn: Injury Type
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Criteria = m
+		mode: import
+		source =
+				let
+				    Source = #table(
+				        {"Phase ID", "Phase Name", "Injury Type", "Device", "Metric Name", "Direction", "Threshold", "Pre-Injury Value", "Threshold Type"},
+				        {
+				            {"1", "Mid Rehab",  "ACL", "ForceDecks", "Squat Ecc Decel Asym %",     "lower", 10,  null, "Asym"},
+				            {"1", "Mid Rehab",  "ACL", "ForceDecks", "SL Stand Total Excursion L",  "lower", 550, null, "Absolute"},
+				            {"1", "Mid Rehab",  "ACL", "ForceDecks", "SL Stand Total Excursion R",  "lower", 550, null, "Absolute"},
+				            {"1", "Mid Rehab",  "ACL", "ForceFrame", "Iso Leg Ext Asym %",          "lower", 10,  null, "Asym"},
+				            {"1", "Mid Rehab",  "ACL", "ForceFrame", "KF Strength Asym %",          "lower", 15,  null, "Asym"},
+				            {"1", "Mid Rehab",  "ACL", "ForceFrame", "KE Strength Asym %",          "lower", 15,  null, "Asym"},
+				            {"2", "Late Rehab", "ACL", "ForceFrame", "Iso Leg Ext Asym %",          "lower",  5,  null, "Asym"},
+				            {"2", "Late Rehab", "ACL", "ForceFrame", "KF Strength Asym %",          "lower", 10,  null, "Asym"},
+				            {"2", "Late Rehab", "ACL", "ForceFrame", "KE Strength Asym %",          "lower", 10,  null, "Asym"},
+				            {"2", "Late Rehab", "ACL", "ForceFrame", "KF RFD Asym %",               "lower", 15,  null, "Asym"},
+				            {"2", "Late Rehab", "ACL", "ForceFrame", "KE RFD Asym %",               "lower", 15,  null, "Asym"},
+				            {"2", "Late Rehab", "ACL", "ForceDecks", "CMJ Ecc Decel Asym %",        "lower", 15,  null, "Asym"},
+				            {"2", "Late Rehab", "ACL", "ForceDecks", "CMJ Conc Asym %",             "lower", 20,  null, "Asym"},
+				            {"3", "RTP",        "ACL", "ForceDecks", "CMJ Ecc Decel Asym %",        "lower", 10,  null, "Asym"},
+				            {"3", "RTP",        "ACL", "ForceDecks", "CMJ Conc Asym %",             "lower", 10,  null, "Asym"},
+				            {"4", "RTS",        "ACL", "ForceDecks", "CMJ Conc Asym %",             "lower", 10,  null, "Asym"}
+				        }
+				    ),
+				    #"Changed Type" = Table.TransformColumnTypes(Source, {
+				        {"Phase ID", type text},
+				        {"Phase Name", type text},
+				        {"Injury Type", type text},
+				        {"Device", type text},
+				        {"Metric Name", type text},
+				        {"Direction", type text},
+				        {"Threshold", type number},
+				        {"Pre-Injury Value", type number},
+				        {"Threshold Type", type text}
+				    }),
+				    #"Added Index" = Table.AddIndexColumn(#"Changed Type", "Row ID", 1, 1, Int64.Type)
+				in
+				    #"Added Index"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

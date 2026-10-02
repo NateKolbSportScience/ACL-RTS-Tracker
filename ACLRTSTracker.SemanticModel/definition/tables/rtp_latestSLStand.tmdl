@@ -1,0 +1,118 @@
+table rtp_latestSLStand
+	lineageTag: 66145bf0-6ad8-5c4c-bc30-e37cf2fbf8bb
+
+	column Name
+		dataType: string
+		lineageTag: 162512ed-911f-53b5-9625-bd8cbba75fe4
+		summarizeBy: none
+		sourceColumn: Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: b733cad9-655d-5cd7-a567-ba98ce807954
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Total Excursion L (mm)'
+		dataType: double
+		lineageTag: f9c316e8-2a21-5e54-a2bf-79d93e81594c
+		summarizeBy: none
+		sourceColumn: Total Excursion L (mm)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Total Excursion R (mm)'
+		dataType: double
+		lineageTag: ffb26a14-b82e-52d4-a9cc-ff2f0776cbe0
+		summarizeBy: none
+		sourceColumn: Total Excursion R (mm)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'CoP Range - Medial-Lateral [mm] (L)'
+		dataType: double
+		lineageTag: 6b2e36d8-a3c8-5ed4-93f2-3228ce002f0a
+		summarizeBy: none
+		sourceColumn: CoP Range - Medial-Lateral [mm] (L)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'CoP Range - Medial-Lateral [mm] (R)'
+		dataType: double
+		lineageTag: b3a65ca5-ed53-5674-8859-d4cd7e3b0d3a
+		summarizeBy: none
+		sourceColumn: CoP Range - Medial-Lateral [mm] (R)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'CoP Range - Anterior-Posterior [mm] (L)'
+		dataType: double
+		lineageTag: 5f7e7151-08e6-5008-869f-f2987e2ce341
+		summarizeBy: none
+		sourceColumn: CoP Range - Anterior-Posterior [mm] (L)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'CoP Range - Anterior-Posterior [mm] (R)'
+		dataType: double
+		lineageTag: 02ad1e43-37de-59c3-b16c-9f67d28e8801
+		summarizeBy: none
+		sourceColumn: CoP Range - Anterior-Posterior [mm] (R)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition rtp_latestSLStand = m
+		mode: import
+		source =
+				// ForceDecks single-leg stance: centre-of-pressure excursion per leg. Uses the export's total
+				// excursion when present, otherwise the resultant of the medial-lateral and anterior-posterior ranges.
+				let
+				    Spec = {
+				        {"Name", {"Name", "Athlete", "Athlete Name"}, "text"},
+				        {"ExternalId", {"ExternalId", "External Id"}, "text"},
+				        {"Date", {"Date", "Test Date"}, "date"},
+				        {"Total Excursion L (mm)", {"CoP Total Excursion [mm] (L)", "Total Excursion [mm] (L)"}, "number"},
+				        {"Total Excursion R (mm)", {"CoP Total Excursion [mm] (R)", "Total Excursion [mm] (R)"}, "number"},
+				        {"CoP Range - Medial-Lateral [mm] (L)", {"CoP Range - Medial-Lateral [mm] (L)"}, "number"},
+				        {"CoP Range - Medial-Lateral [mm] (R)", {"CoP Range - Medial-Lateral [mm] (R)"}, "number"},
+				        {"CoP Range - Anterior-Posterior [mm] (L)", {"CoP Range - Anterior-Posterior [mm] (L)"}, "number"},
+				        {"CoP Range - Anterior-Posterior [mm] (R)", {"CoP Range - Anterior-Posterior [mm] (R)"}, "number"}
+				    },
+				    Shaped = Fx[Shape](Athletes[Of]("slstand"), Spec),
+				    Resultant = (ml, ap) => if ml = null or ap = null then null else Number.Sqrt(Number.Power(ml, 2) + Number.Power(ap, 2)),
+				    Rows = Table.FromRecords(Table.TransformRows(Shaped, (r) => r & [
+				        Name = Athletes[Display](Athletes[Resolve](r[Name], r[ExternalId])),
+				        #"Total Excursion L (mm)" = if r[#"Total Excursion L (mm)"] <> null then r[#"Total Excursion L (mm)"]
+				            else Resultant(r[#"CoP Range - Medial-Lateral [mm] (L)"], r[#"CoP Range - Anterior-Posterior [mm] (L)"]),
+				        #"Total Excursion R (mm)" = if r[#"Total Excursion R (mm)"] <> null then r[#"Total Excursion R (mm)"]
+				            else Resultant(r[#"CoP Range - Medial-Lateral [mm] (R)"], r[#"CoP Range - Anterior-Posterior [mm] (R)"])]),
+				        Table.ColumnNames(Shaped) & {}, MissingField.UseNull),
+				    Valid = Table.SelectRows(Table.RemoveColumns(Rows, {"ExternalId"}), each [Name] <> null and [Date] <> null),
+				    Typed = Table.TransformColumnTypes(Table.Distinct(Valid), {
+				        {"Name", type text}, {"Date", type date}, {"Total Excursion L (mm)", type number}, {"Total Excursion R (mm)", type number},
+				        {"CoP Range - Medial-Lateral [mm] (L)", type number}, {"CoP Range - Medial-Lateral [mm] (R)", type number},
+				        {"CoP Range - Anterior-Posterior [mm] (L)", type number}, {"CoP Range - Anterior-Posterior [mm] (R)", type number}})
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table
+

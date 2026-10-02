@@ -1,0 +1,38 @@
+table 'CMJ Metrics bottom 3'
+	lineageTag: d47a0936-9ec6-4b67-bdf9-460498c0d4b3
+
+	column 'Metric ID'
+		dataType: string
+		lineageTag: 2e489438-2937-48d8-a18c-12aa68a9e9d5
+		summarizeBy: none
+		sourceColumn: Metric ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Metric Name'
+		dataType: string
+		lineageTag: 02e74de4-becc-48f5-94bd-391ec637e628
+		summarizeBy: none
+		sourceColumn: Metric Name
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'CMJ Metrics bottom 3' = m
+		mode: import
+		source =
+				let
+				    Source = #table(
+				        {"Metric ID", "Metric Name"},
+				        {
+				            {"1", "Force at Zero Velocity (N)"},
+				            {"2", "Vertical Velocity at Takeoff (m/s)"},
+				            {"3", "Eccentric Braking RFD (N/s)"}
+				        }
+				    )
+				in
+				    Source
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

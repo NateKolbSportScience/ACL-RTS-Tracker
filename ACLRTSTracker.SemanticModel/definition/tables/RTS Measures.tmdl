@@ -1,0 +1,1259 @@
+table 'RTS Measures'
+	lineageTag: 70737ac5-e0e9-455b-8239-97bf5e4c13ad
+
+	measure 'Current Phase' =
+			
+			LOOKUPVALUE('Phases'[Phase Name], 'Phases'[Phase ID], MAX('Athlete'[Current Phase ID]))
+		lineageTag: 4b77eaea-8cac-45e0-bfe7-57feea8a79bc
+
+	measure 'As Of Date' =
+			
+			MAXX(
+			    {
+			        CALCULATE(MAX('rtp_latestCMJ'[Date])),
+			        CALCULATE(MAX('rtp_latestSquat'[Date])),
+			        CALCULATE(MAX('rtp_latestSLStand'[Date])),
+			        CALCULATE(MAX('rtp_latestForceFrames'[Date]))
+			    },
+			    [Value]
+			)
+		formatString: d mmm yyyy
+		lineageTag: 3f91ed9c-aba4-5050-b0c2-2b707e056fc2
+
+	measure 'Months Post-Op (Auto)' =
+			
+			VAR SurgeryDate = MAX('Athlete'[Surgery Date])
+			VAR AsOf = [As Of Date]
+			RETURN
+			IF(ISBLANK(SurgeryDate) || ISBLANK(AsOf), BLANK(), DATEDIFF(SurgeryDate, AsOf, MONTH))
+		formatString: 0
+		lineageTag: 1573e32b-e1f1-583a-8f19-3627fd288d07
+
+	measure 'Latest KF Strength Asym %' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull")
+			VAR CurrentValue = CALCULATE(AVERAGE('rtp_latestForceFrames'[Max Imbalance]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Date] = LatestDate,
+			    NOT(ISBLANK('rtp_latestForceFrames'[Max Imbalance])))
+			RETURN
+			IF(ISBLANK(CurrentValue) || CurrentValue = 0, BLANK(), CurrentValue)
+		lineageTag: 1f81b85c-cbc3-46a1-b3af-1840de7595be
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest KE Strength Asym %' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)")
+			VAR CurrentValue = CALCULATE(AVERAGE('rtp_latestForceFrames'[Max Imbalance]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			RETURN
+			IF(ISBLANK(CurrentValue) || CurrentValue = 0, BLANK(), CurrentValue)
+		lineageTag: 1f2405f3-2b03-4978-add7-004139a99f33
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest KF/KE RFD Asym %' =
+			
+			VAR LatestKFDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull")
+			VAR LRFD = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max RFD (N/s)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Date] = LatestKFDate)
+			VAR RRFD = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max RFD (N/s)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Date] = LatestKFDate)
+			RETURN
+			IF(ISBLANK(LRFD) || ISBLANK(RRFD) || (LRFD + RRFD) = 0, BLANK(),
+			    ABS(LRFD - RRFD) / ((LRFD + RRFD) / 2) * 100)
+		lineageTag: 7fdbf919-c68e-44c2-be44-8ec284dfe5a5
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest CMJ Ecc Decel Asym %' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestCMJ'[Date]),
+			    'rtp_latestCMJ'[Test Type] = "CMJ")
+			RETURN
+			CALCULATE(MAX('rtp_latestCMJ'[Eccentric Braking Impulse % (Asym) Direction]),
+			    'rtp_latestCMJ'[Test Type] = "CMJ",
+			    'rtp_latestCMJ'[Date] = LatestDate)
+		lineageTag: fbd85dbd-c793-4e9d-9b74-bfdb30d45c91
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest CMJ Conc Asym %' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestCMJ'[Date]),
+			    'rtp_latestCMJ'[Test Type] = "CMJ")
+			RETURN
+			CALCULATE(MAX('rtp_latestCMJ'[Concentric Impulse % (Asym) Direction]),
+			    'rtp_latestCMJ'[Test Type] = "CMJ",
+			    'rtp_latestCMJ'[Date] = LatestDate)
+		formatString: 0
+		lineageTag: eb22d258-1125-48b4-8363-33bf4c9d83a6
+
+	measure 'Latest HQ Ratio L' =
+			
+			DIVIDE([Latest Ham L (N)], [Latest Quad L (N)])
+		formatString: 0.00
+		lineageTag: 0ab63de2-ba6c-5d5a-96c1-1e16d71ab8ed
+
+	measure 'Latest HQ Ratio R' =
+			
+			DIVIDE([Latest Ham R (N)], [Latest Quad R (N)])
+		formatString: 0.00
+		lineageTag: c1809b21-5966-5b38-8eb1-92c8c8658ff6
+
+	measure 'KF Strength Asym Pass' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]),
+			    'Criteria'[Metric Name] = "KF Strength Asym %",
+			    'Criteria'[Phase ID] = MAX('Athlete'[Current Phase ID]))
+			VAR CurrentValue = [Latest KF Strength Asym %]
+			RETURN
+			IF(ISBLANK(CurrentValue), BLANK(),
+			    IF(CurrentValue <= Threshold, 1, 0))
+		formatString: 0
+		lineageTag: 68566c69-64b9-44f8-a080-190e7efc1a54
+
+	measure 'KE Strength Asym Pass' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]),
+			    'Criteria'[Metric Name] = "KE Strength Asym %",
+			    'Criteria'[Phase ID] = MAX('Athlete'[Current Phase ID]))
+			VAR CurrentValue = [Latest KE Strength Asym %]
+			RETURN
+			IF(ISBLANK(CurrentValue), BLANK(),
+			    IF(CurrentValue <= Threshold, 1, 0))
+		formatString: 0
+		lineageTag: 2304bc3c-7adc-4078-8f86-f67480cd8b9f
+
+	measure 'KF/KE RFD Asym Pass' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]),
+			    'Criteria'[Metric Name] = "KF/KE RFD Asym %",
+			    'Criteria'[Phase ID] = MAX('Athlete'[Current Phase ID]))
+			VAR CurrentValue = [Latest KF/KE RFD Asym %]
+			RETURN
+			IF(ISBLANK(CurrentValue), BLANK(),
+			    IF(CurrentValue <= Threshold, 1, 0))
+		formatString: 0
+		lineageTag: 079297c8-1199-49d3-a29e-10ed67aa1e86
+
+	measure 'CMJ Ecc Decel Asym Pass' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]),
+			    'Criteria'[Metric Name] = "CMJ Ecc Decel Asym %",
+			    'Criteria'[Phase ID] = MAX('Athlete'[Current Phase ID]))
+			VAR CurrentValue = ABS([Latest CMJ Ecc Decel Asym %])
+			RETURN
+			IF(ISBLANK(CurrentValue), BLANK(),
+			    IF(CurrentValue <= Threshold, 1, 0))
+		formatString: 0
+		lineageTag: 70386e35-9d6c-40d6-b8e8-3633ee09c691
+
+	measure 'CMJ Conc Asym Pass' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]),
+			    'Criteria'[Metric Name] = "CMJ Conc Asym %",
+			    'Criteria'[Phase ID] = MAX('Athlete'[Current Phase ID]))
+			VAR CurrentValue = ABS([Latest CMJ Conc Asym %])
+			RETURN
+			IF(ISBLANK(CurrentValue), BLANK(),
+			    IF(CurrentValue <= Threshold, 1, 0))
+		formatString: 0
+		lineageTag: 2db145ef-34bb-4916-8d47-4c3ef5a22cc6
+
+	measure 'Criteria Met' =
+			
+			SUMX(
+			    VALUES('Criteria'[Metric Name]),
+			    SWITCH(
+			        'Criteria'[Metric Name],
+			        "KF Strength Asym %",    [KF Strength Asym Pass],
+			        "KE Strength Asym %",    [KE Strength Asym Pass],
+			        "KF/KE RFD Asym %",      [KF/KE RFD Asym Pass],
+			        "CMJ Ecc Decel Asym %",  [CMJ Ecc Decel Asym Pass],
+			        "CMJ Conc Asym %",       [CMJ Conc Asym Pass],
+			        0
+			    )
+			)
+		formatString: 0
+		lineageTag: 4b12928a-6879-4e07-a66d-8a175f6e0136
+
+	measure 'Criteria Total' =
+			
+			CALCULATE(
+			    COUNTROWS('Criteria'),
+			    'Criteria'[Phase ID] = MAX('Athlete'[Current Phase ID]))
+		formatString: 0
+		lineageTag: c4999c05-213b-4afa-9540-459cb7619b39
+
+	measure 'Criteria Progress %' =
+			
+			DIVIDE([Criteria Met], [Criteria Total], 0)
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: b76f4ac0-ed93-424a-8923-af2a82ce2e0f
+
+	measure 'Athlete Photo HTML' =
+			
+			VAR Label = SELECTEDVALUE('Athlete'[Name], "Select an athlete")
+			VAR Limb = SELECTEDVALUE('Athlete'[Operated Limb], "")
+			VAR Photo = SELECTEDVALUE('Athlete'[Photo URL], "")
+			VAR Badge =
+			    "<svg viewBox='0 0 64 64' style='width:62%;max-height:70%;'><circle cx='32' cy='32' r='31' fill='#3A4634' stroke='#E3C770' stroke-width='2'/>" &
+			    "<circle cx='32' cy='25' r='10' fill='#E3C770'/><path d='M14 52c2-11 9-16 18-16s16 5 18 16z' fill='#E3C770'/></svg>"
+			VAR Picture =
+			    IF(Photo = "", Badge,
+			        "<img src='" & Photo & "' style='width:62%;max-height:70%;aspect-ratio:1;object-fit:cover;border-radius:50%;border:2px solid #E3C770;'/>")
+			RETURN
+			"<div style='width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Segoe UI;'>" &
+			Picture &
+			"<div style='color:#F1EEE2;font-size:13px;font-weight:600;margin-top:6px;'>" & Label & "</div>" &
+			"<div style='color:#BDBBA6;font-size:11px;'>" & IF(Limb = "", "", Limb & " ACL") & "</div></div>"
+		lineageTag: 221acd91-61b7-5731-871a-6b43c17d2fc1
+
+	measure 'KF Strength Asym Color' =
+			
+			VAR CurrentValue = [Latest KF Strength Asym %]
+			VAR PassFail = [KF Strength Asym Pass]
+			RETURN
+			IF(ISBLANK(CurrentValue), "#5A6650",
+			    IF(PassFail = 1, "#6CC28A", "#F07167"))
+		lineageTag: d5446e94-7ff1-4d25-8b9a-54b0a61193a4
+
+	measure 'KE Strength Asym Color' =
+			
+			VAR CurrentValue = [Latest KE Strength Asym %]
+			VAR PassFail = [KE Strength Asym Pass]
+			RETURN
+			IF(ISBLANK(CurrentValue), "#5A6650",
+			    IF(PassFail = 1, "#6CC28A", "#F07167"))
+		lineageTag: 8e811239-7eff-4990-966e-8c2da72edca0
+
+	measure 'CMJ Ecc Decel Asym Color' =
+			
+			VAR CurrentValue = [Latest CMJ Ecc Decel Asym %]
+			VAR PassFail = [CMJ Ecc Decel Asym Pass]
+			RETURN
+			IF(ISBLANK(CurrentValue), "#5A6650",
+			    IF(PassFail = 1, "#6CC28A", "#F07167"))
+		lineageTag: 0fd39e80-d2d8-454a-a9ec-8c8ad9d23d0a
+
+	measure 'CMJ Conc Asym Color' =
+			
+			VAR CurrentValue = [Latest CMJ Conc Asym %]
+			VAR PassFail = [CMJ Conc Asym Pass]
+			RETURN
+			IF(ISBLANK(CurrentValue), "#5A6650",
+			    IF(PassFail = 1, "#6CC28A", "#F07167"))
+		lineageTag: b868c4cf-aae0-47af-ac45-08813d93bdf0
+
+	measure 'Current Value' =
+			
+			SWITCH(
+			    MAX('Criteria'[Metric Name]),
+			    "KF/KE Strength Asym %",     ABS([Latest KF/KE Strength Asym %]),
+			    "KF Strength Asym %",        ABS([Latest KF Strength Asym %]),
+			    "KE Strength Asym %",        ABS([Latest KE Strength Asym %]),
+			    "Iso Leg Ext Asym %",        ABS([Latest Iso Leg Ext Asym %]),
+			    "KF RFD Asym %",             ABS([Latest KF RFD Asym %]),
+			    "KE RFD Asym %",             ABS([Latest KE RFD Asym %]),
+			    "CMJ Ecc Decel Asym %",      ABS([Latest CMJ Ecc Decel Asym %]),
+			    "CMJ Conc Asym %",           ABS([Latest CMJ Conc Asym %]),
+			    "Squat Ecc Decel Asym %",    [Latest Squat Ecc Decel Asym %],
+			    "SL Stand Total Excursion L", [Latest SL Stand Excursion L],
+			    "SL Stand Total Excursion R", [Latest SL Stand Excursion R],
+			    "KF Prone Asym %",           [Latest KF Prone Asym %],
+			    "KE 45 Asym %",              [Latest KE 45 Asym %],
+			    "Hip Abd Asym %",            [Latest Hip Abd Asym %],
+			    "Hip Add Asym %",            [Latest Hip Add Asym %],
+			    0
+			)
+		lineageTag: ce5cfb72-c33f-41fb-a060-dc71e92c756d
+
+	measure 'Status Color' =
+			
+			SWITCH(
+			    MAX('Criteria'[Metric Name]),
+			    "KF Strength Asym %",   IF(ISBLANK([Latest KF Strength Asym %]), "#5A6650", IF([KF Strength Asym Pass] = 1, "#6CC28A", "#F07167")),
+			    "KE Strength Asym %",   IF(ISBLANK([Latest KE Strength Asym %]), "#5A6650", IF([KE Strength Asym Pass] = 1, "#6CC28A", "#F07167")),
+			    "KF/KE RFD Asym %",     IF(ISBLANK([Latest KF/KE RFD Asym %]), "#5A6650", IF([KF/KE RFD Asym Pass] = 1, "#6CC28A", "#F07167")),
+			    "CMJ Ecc Decel Asym %", IF(ISBLANK([Latest CMJ Ecc Decel Asym %]), "#5A6650", IF([CMJ Ecc Decel Asym Pass] = 1, "#6CC28A", "#F07167")),
+			    "CMJ Conc Asym %",      IF(ISBLANK([Latest CMJ Conc Asym %]), "#5A6650", IF([CMJ Conc Asym Pass] = 1, "#6CC28A", "#F07167")),
+			    "#5A6650"
+			)
+		lineageTag: 4f191fef-21b2-40d5-a039-249421aa3021
+
+	measure 'Phase Rail HTML' =
+			
+			VAR CurrentPhase = SELECTEDVALUE('Athlete'[Current Phase ID])
+			VAR Met1 = SUMX(FILTER(ALL('Criteria'), 'Criteria'[Phase ID] = "1"), IF(LEFT(CALCULATE([Status Icon]), 1) = "✓", 1, 0))
+			VAR Tot1 = COUNTROWS(FILTER(ALL('Criteria'), 'Criteria'[Phase ID] = "1"))
+			VAR Met2 = SUMX(FILTER(ALL('Criteria'), 'Criteria'[Phase ID] = "2"), IF(LEFT(CALCULATE([Status Icon]), 1) = "✓", 1, 0))
+			VAR Tot2 = COUNTROWS(FILTER(ALL('Criteria'), 'Criteria'[Phase ID] = "2"))
+			VAR Met3 = SUMX(FILTER(ALL('Criteria'), 'Criteria'[Phase ID] = "3"), IF(LEFT(CALCULATE([Status Icon]), 1) = "✓", 1, 0))
+			VAR Tot3 = COUNTROWS(FILTER(ALL('Criteria'), 'Criteria'[Phase ID] = "3"))
+			VAR Met4 = SUMX(FILTER(ALL('Criteria'), 'Criteria'[Phase ID] = "4"), IF(LEFT(CALCULATE([Status Icon]), 1) = "✓", 1, 0))
+			VAR Tot4 = COUNTROWS(FILTER(ALL('Criteria'), 'Criteria'[Phase ID] = "4"))
+			VAR Done1 = TRUE() && Met1 = Tot1 && Tot1 > 0
+			VAR Done2 = Done1 && Met2 = Tot2 && Tot2 > 0
+			VAR Done3 = Done2 && Met3 = Tot3 && Tot3 > 0
+			VAR Done4 = Done3 && Met4 = Tot4 && Tot4 > 0
+			RETURN
+			"<div style='display:flex;align-items:stretch;width:100%;height:100%;'>" &
+			"<div style='flex:1;margin:4px;padding:8px 6px;border-radius:8px;text-align:center;font-family:Segoe UI;background:" & IF(Done1, "#6CC28A", "#3A4634") & ";color:" & IF(Done1, "#1E2419", IF((CurrentPhase = "1"), "#F1EEE2", "#BDBBA6")) & ";border:2px solid " & IF((CurrentPhase = "1"), "#E3C770", IF(Done1, "#6CC28A", "#3A4634")) & ";'>" & "<div style='font-size:15px;font-weight:700;'>Mid Rehab" & IF(Done1, " ✓", "") & "</div>" & "<div style='font-size:10px;opacity:.8;'>2–4 months" & IF((CurrentPhase = "1"), " · CURRENT", "") & "</div>" & "<div style='height:6px;background:rgba(0,0,0,.25);border-radius:3px;margin:6px 6px 3px;'><div style='height:6px;border-radius:3px;width:" & FORMAT(DIVIDE(Met1, Tot1, 0) * 100, "0") & "%;background:" & IF(Done1, "#1E2419", IF((CurrentPhase = "1"), "#F2C14E", "#6CC28A")) & ";'></div></div>" & "<div style='font-size:11px;'>" & Met1 & " / " & Tot1 & " criteria met</div></div>" &
+			"<div style='color:#F1EEE2;opacity:.35;font-size:16px;'>▶</div>" &
+			"<div style='flex:1;margin:4px;padding:8px 6px;border-radius:8px;text-align:center;font-family:Segoe UI;background:" & IF(Done2, "#6CC28A", "#3A4634") & ";color:" & IF(Done2, "#1E2419", IF((CurrentPhase = "2"), "#F1EEE2", "#BDBBA6")) & ";border:2px solid " & IF((CurrentPhase = "2"), "#E3C770", IF(Done2, "#6CC28A", "#3A4634")) & ";'>" & "<div style='font-size:15px;font-weight:700;'>Late Rehab" & IF(Done2, " ✓", "") & "</div>" & "<div style='font-size:10px;opacity:.8;'>4–6 months" & IF((CurrentPhase = "2"), " · CURRENT", "") & "</div>" & "<div style='height:6px;background:rgba(0,0,0,.25);border-radius:3px;margin:6px 6px 3px;'><div style='height:6px;border-radius:3px;width:" & FORMAT(DIVIDE(Met2, Tot2, 0) * 100, "0") & "%;background:" & IF(Done2, "#1E2419", IF((CurrentPhase = "2"), "#F2C14E", "#6CC28A")) & ";'></div></div>" & "<div style='font-size:11px;'>" & Met2 & " / " & Tot2 & " criteria met</div></div>" &
+			"<div style='color:#F1EEE2;opacity:.35;font-size:16px;'>▶</div>" &
+			"<div style='flex:1;margin:4px;padding:8px 6px;border-radius:8px;text-align:center;font-family:Segoe UI;background:" & IF(Done3, "#6CC28A", "#3A4634") & ";color:" & IF(Done3, "#1E2419", IF((CurrentPhase = "3"), "#F1EEE2", "#BDBBA6")) & ";border:2px solid " & IF((CurrentPhase = "3"), "#E3C770", IF(Done3, "#6CC28A", "#3A4634")) & ";'>" & "<div style='font-size:15px;font-weight:700;'>RTP" & IF(Done3, " ✓", "") & "</div>" & "<div style='font-size:10px;opacity:.8;'>6–9 months" & IF((CurrentPhase = "3"), " · CURRENT", "") & "</div>" & "<div style='height:6px;background:rgba(0,0,0,.25);border-radius:3px;margin:6px 6px 3px;'><div style='height:6px;border-radius:3px;width:" & FORMAT(DIVIDE(Met3, Tot3, 0) * 100, "0") & "%;background:" & IF(Done3, "#1E2419", IF((CurrentPhase = "3"), "#F2C14E", "#6CC28A")) & ";'></div></div>" & "<div style='font-size:11px;'>" & Met3 & " / " & Tot3 & " criteria met</div></div>" &
+			"<div style='color:#F1EEE2;opacity:.35;font-size:16px;'>▶</div>" &
+			"<div style='flex:1;margin:4px;padding:8px 6px;border-radius:8px;text-align:center;font-family:Segoe UI;background:" & IF(Done4, "#6CC28A", "#3A4634") & ";color:" & IF(Done4, "#1E2419", IF((CurrentPhase = "4"), "#F1EEE2", "#BDBBA6")) & ";border:2px solid " & IF((CurrentPhase = "4"), "#E3C770", IF(Done4, "#6CC28A", "#3A4634")) & ";'>" & "<div style='font-size:15px;font-weight:700;'>RTS" & IF(Done4, " ✓", "") & "</div>" & "<div style='font-size:10px;opacity:.8;'>9–12 months" & IF((CurrentPhase = "4"), " · CURRENT", "") & "</div>" & "<div style='height:6px;background:rgba(0,0,0,.25);border-radius:3px;margin:6px 6px 3px;'><div style='height:6px;border-radius:3px;width:" & FORMAT(DIVIDE(Met4, Tot4, 0) * 100, "0") & "%;background:" & IF(Done4, "#1E2419", IF((CurrentPhase = "4"), "#F2C14E", "#6CC28A")) & ";'></div></div>" & "<div style='font-size:11px;'>" & Met4 & " / " & Tot4 & " criteria met</div></div>" &
+			"</div>"
+		lineageTag: 03baf9e1-7706-5792-906c-8244b378d496
+
+	measure 'Current Phase Filter' =
+			
+			IF(MAX('Criteria'[Phase ID]) = MAX('Athlete'[Current Phase ID]), 1, 0)
+		formatString: 0
+		lineageTag: 4f80af6f-03d8-4326-bda6-af4d6713b110
+
+	measure 'Latest Ham L (N)' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion")
+			RETURN
+			CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+		formatString: 0
+		lineageTag: f135e625-613d-5a17-939e-ebcf9ae3f499
+
+	measure 'Latest Ham R (N)' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion")
+			RETURN
+			CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+		formatString: 0
+		lineageTag: 815d068d-b003-504b-a0e8-43ccb6e85ee8
+
+	measure 'Latest Quad L (N)' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)")
+			RETURN
+			CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+		formatString: 0
+		lineageTag: a5dc8aa6-38a6-5bb1-bd5c-764202413872
+
+	measure 'Latest Quad R (N)' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)")
+			RETURN
+			CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+		formatString: 0
+		lineageTag: 62675fa8-17be-513c-9cda-33d281fe3fa9
+
+	measure 'Status Icon' =
+			
+			VAR MetricName = MAX('Criteria'[Metric Name])
+			RETURN
+			SWITCH(
+			    MetricName,
+			    "KF Strength Asym %",        [KF Status],
+			    "KE Strength Asym %",        [KE Status],
+			    "Iso Leg Ext Asym %",        [Iso Status],
+			    "KF RFD Asym %",             [KF RFD Status],
+			    "KE RFD Asym %",             [KE RFD Status],
+			    "CMJ Ecc Decel Asym %",      [CMJ Ecc Status],
+			    "CMJ Conc Asym %",           [CMJ Conc Status],
+			    "Squat Ecc Decel Asym %",    [Squat Ecc Decel Status],
+			    "SL Stand Total Excursion L", [SL Stand L Status],
+			    "SL Stand Total Excursion R", [SL Stand R Status],
+			    "KF Prone Asym %",           [KF Prone Status],
+			    "KE 45 Asym %",              [KE 45 Status],
+			    "Hip Abd Asym %",            [Hip Abd Status],
+			    "Hip Add Asym %",            [Hip Add Status],
+			    "—"
+			)
+		lineageTag: 9e49b4d6-480c-4108-acc3-0f92a35ec273
+
+	measure 'Latest KF/KE Strength Asym %' =
+			
+			AVERAGEX(
+			    {[Latest KF Strength Asym %], [Latest KE Strength Asym %]},
+			    [Value]
+			)
+		lineageTag: 45074ab8-1861-4234-892b-51cc8294c2a2
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest Iso Leg Ext Asym %' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Hip Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Hip Extension - Prone")
+			RETURN
+			CALCULATE(MAX('rtp_latestForceFrames'[Max Imbalance]),
+			    'rtp_latestForceFrames'[Test] = "Hip Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Hip Extension - Prone",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+		lineageTag: 9e166346-75b9-4cdd-b8c9-01cc57f6c291
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Row Color' =
+			
+			VAR Icon = [Status Icon]
+			RETURN
+			IF(LEFT(Icon, 1) = "✓", "#6CC28A", IF(Icon = "✗", "#F2C14E", "#3A4634"))
+		lineageTag: 7bfedfa3-17f9-4af4-85a0-b5f8b715746d
+
+	measure 'Latest KE RFD Asym %' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)")
+			VAR LRFD = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max RFD (N/s)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			VAR RRFD = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max RFD (N/s)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			RETURN
+			IF(ISBLANK(LRFD) || ISBLANK(RRFD) || (LRFD + RRFD) = 0, BLANK(),
+			    ABS(LRFD - RRFD) / ((LRFD + RRFD) / 2) * 100)
+		lineageTag: 0b63ac92-7ce2-46c7-94e5-f604c411561f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest KF RFD Asym %' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull")
+			VAR LRFD = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max RFD (N/s)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			VAR RRFD = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max RFD (N/s)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			RETURN
+			IF(ISBLANK(LRFD) || ISBLANK(RRFD) || (LRFD + RRFD) = 0, BLANK(),
+			    ABS(LRFD - RRFD) / ((LRFD + RRFD) / 2) * 100)
+		lineageTag: 0ba0efc5-c36a-4b40-aa2a-6364fc32f790
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'KF Operated Limb Deficit' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull")
+			VAR LForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			VAR RForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			VAR OperatedLimb = MAX('Athlete'[Operated Limb])
+			VAR OperatedForce = IF(OperatedLimb = "Right", RForce, LForce)
+			VAR NonOperatedForce = IF(OperatedLimb = "Right", LForce, RForce)
+			RETURN
+			IF(ISBLANK(OperatedForce) || ISBLANK(NonOperatedForce), BLANK(),
+			    DIVIDE(OperatedForce, NonOperatedForce) * 100)
+		lineageTag: fb0c9bc4-33d4-4a8d-bc50-8d0fac429fc4
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'KE Operated Limb Deficit' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)")
+			VAR LForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			VAR RForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			VAR OperatedLimb = MAX('Athlete'[Operated Limb])
+			VAR OperatedForce = IF(OperatedLimb = "Right", RForce, LForce)
+			VAR NonOperatedForce = IF(OperatedLimb = "Right", LForce, RForce)
+			RETURN
+			IF(ISBLANK(OperatedForce) || ISBLANK(NonOperatedForce), BLANK(),
+			    DIVIDE(OperatedForce, NonOperatedForce) * 100)
+		lineageTag: 6a59c054-df5e-4653-b6ac-7e0a0919ee20
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Iso Leg Ext Operated Limb Deficit' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Hip Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Hip Extension - Prone")
+			VAR LForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Hip Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Hip Extension - Prone",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			VAR RForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Hip Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Hip Extension - Prone",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			VAR OperatedLimb = MAX('Athlete'[Operated Limb])
+			VAR OperatedForce = IF(OperatedLimb = "Right", RForce, LForce)
+			VAR NonOperatedForce = IF(OperatedLimb = "Right", LForce, RForce)
+			RETURN
+			IF(ISBLANK(OperatedForce) || ISBLANK(NonOperatedForce), BLANK(),
+			    DIVIDE(OperatedForce, NonOperatedForce) * 100)
+		lineageTag: 37190760-0ef6-4ded-b8d0-bbda197d16e1
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Selected CMJ Metric' =
+			
+			VAR SelectedMetric = SELECTEDVALUE('CMJ Metrics'[Metric Name])
+			RETURN
+			SWITCH(
+			    SelectedMetric,
+			   "Jump Height (cm)", AVERAGE('rtp_latestCMJ'[Jump Height (Imp-Mom) (cm)]),
+			    "Contraction Time (ms)",              AVERAGE('rtp_latestCMJ'[Contraction Time (ms)]),
+			    "Peak Power / BM (W/kg)",             AVERAGE('rtp_latestCMJ'[Peak Power / BM (W/kg)]),
+			    "Force at Zero Velocity (N)",         AVERAGE('rtp_latestCMJ'[Force at Zero Velocity (N)]),
+			    "Vertical Velocity at Takeoff (m/s)", AVERAGE('rtp_latestCMJ'[Vertical Velocity at Takeoff (m/s)]),
+			    "Eccentric Braking RFD (N/s)",        AVERAGE('rtp_latestCMJ'[Eccentric Braking RFD (N/s)]),
+			    BLANK()
+			)
+		lineageTag: 02cba13d-2784-4cbc-9f1f-0666ddb9cfb0
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Selected CMJ Metric 2' =
+			
+			VAR SelectedMetric = SELECTEDVALUE('CMJ Metrics bottom 3'[Metric Name])RETURN
+			SWITCH(
+			    SelectedMetric,
+			   "Jump Height (cm)", AVERAGE('rtp_latestCMJ'[Jump Height (Imp-Mom) (cm)]),
+			    "Contraction Time (ms)",              AVERAGE('rtp_latestCMJ'[Contraction Time (ms)]),
+			    "Peak Power / BM (W/kg)",             AVERAGE('rtp_latestCMJ'[Peak Power / BM (W/kg)]),
+			    "Force at Zero Velocity (N)",         AVERAGE('rtp_latestCMJ'[Force at Zero Velocity (N)]),
+			    "Vertical Velocity at Takeoff (m/s)", AVERAGE('rtp_latestCMJ'[Vertical Velocity at Takeoff (m/s)]),
+			    "Eccentric Braking RFD (N/s)",        AVERAGE('rtp_latestCMJ'[Eccentric Braking RFD (N/s)]),
+			    BLANK()
+			)
+		lineageTag: 513a0ade-870d-4ac1-9c9a-f865e45dce6f
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'KF Operated Limb Dominant' =
+			
+			VAR OperatedLimb = MAX('Athlete'[Operated Limb])
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull")
+			VAR LForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			VAR RForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			RETURN
+			IF(OperatedLimb = "Right",
+			    IF(RForce > LForce, 1, 0),
+			    IF(LForce > RForce, 1, 0))
+		formatString: 0
+		lineageTag: 680ead28-2034-4b7b-b2d9-908df25bada2
+
+	measure 'KE Operated Limb Dominant' =
+			
+			VAR OperatedLimb = MAX('Athlete'[Operated Limb])
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)")
+			VAR LForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			VAR RForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			RETURN
+			IF(OperatedLimb = "Right",
+			    IF(RForce > LForce, 1, 0),
+			    IF(LForce > RForce, 1, 0))
+		formatString: 0
+		lineageTag: 0c6eacd2-fdaa-4686-99a1-4ca400c8f05e
+
+	measure 'Iso Operated Limb Dominant' =
+			
+			VAR OperatedLimb = MAX('Athlete'[Operated Limb])
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Hip Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Hip Extension - Prone")
+			VAR LForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Hip Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Hip Extension - Prone",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			VAR RForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Hip Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Hip Extension - Prone",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			RETURN
+			IF(OperatedLimb = "Right",
+			    IF(RForce > LForce, 1, 0),
+			    IF(LForce > RForce, 1, 0))
+		formatString: 0
+		lineageTag: 1bdc9a82-2e50-4447-b723-e4a8d7090eaa
+
+	measure 'CMJ Ecc Operated Limb Dominant' =
+			
+			VAR OperatedLimb = MAX('Athlete'[Operated Limb])
+			VAR Val = [Latest CMJ Ecc Decel Asym %]
+			RETURN
+			IF(OperatedLimb = "Right",
+			    IF(Val > 0, 1, 0),
+			    IF(Val < 0, 1, 0))
+		formatString: 0
+		lineageTag: 0cdea309-d282-4ce9-a235-e21b231dbdf9
+
+	measure 'CMJ Conc Operated Limb Dominant' =
+			
+			VAR OperatedLimb = MAX('Athlete'[Operated Limb])
+			VAR Val = [Latest CMJ Conc Asym %]
+			RETURN
+			IF(OperatedLimb = "Right",
+			    IF(Val > 0, 1, 0),
+			    IF(Val < 0, 1, 0))
+		formatString: 0
+		lineageTag: f8cbac14-34d7-43f6-8993-cb853602f986
+
+	measure 'KF Status' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]), 'Criteria'[Metric Name] = "KF Strength Asym %", 'Criteria'[Phase ID] = MAX('Criteria'[Phase ID]))
+			RETURN
+			IF(ISBLANK([Latest KF Strength Asym %]), "—", IF(ABS([Latest KF Strength Asym %]) <= Threshold, "✓", IF([KF Operated Limb Dominant] = 1, "✓ ★", "✗")))
+		lineageTag: d7ac40e3-60bc-490c-81f2-3a81c657d7af
+
+	measure 'KE Status' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]), 'Criteria'[Metric Name] = "KE Strength Asym %", 'Criteria'[Phase ID] = MAX('Criteria'[Phase ID]))
+			RETURN
+			IF(ISBLANK([Latest KE Strength Asym %]), "—", IF(ABS([Latest KE Strength Asym %]) <= Threshold, "✓", IF([KE Operated Limb Dominant] = 1, "✓ ★", "✗")))
+		lineageTag: 509bc22d-43ba-42bc-a6e3-9aeaa6ebf837
+
+	measure 'Iso Status' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]), 'Criteria'[Metric Name] = "Iso Leg Ext Asym %", 'Criteria'[Phase ID] = MAX('Criteria'[Phase ID]))
+			RETURN
+			IF(ISBLANK([Latest Iso Leg Ext Asym %]), "—", IF(ABS([Latest Iso Leg Ext Asym %]) <= Threshold, "✓", IF([Iso Operated Limb Dominant] = 1, "✓ ★", "✗")))
+		lineageTag: c3b6b71b-f8ac-4a0d-b9bb-bf94c2558a58
+
+	measure 'KF RFD Status' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]), 'Criteria'[Metric Name] = "KF RFD Asym %", 'Criteria'[Phase ID] = MAX('Criteria'[Phase ID]))
+			RETURN
+			IF(ISBLANK([Latest KF RFD Asym %]), "—", IF(ABS([Latest KF RFD Asym %]) <= Threshold, "✓", IF([KF Operated Limb Dominant] = 1, "✓ ★", "✗")))
+		lineageTag: 592b153c-dd32-4a5b-98b7-1d71b87e2574
+
+	measure 'KE RFD Status' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]), 'Criteria'[Metric Name] = "KE RFD Asym %", 'Criteria'[Phase ID] = MAX('Criteria'[Phase ID]))
+			RETURN
+			IF(ISBLANK([Latest KE RFD Asym %]), "—", IF(ABS([Latest KE RFD Asym %]) <= Threshold, "✓", IF([KE Operated Limb Dominant] = 1, "✓ ★", "✗")))
+		lineageTag: 71fec990-613e-4ae9-a377-0ca1d9f156d1
+
+	measure 'CMJ Ecc Status' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]), 'Criteria'[Metric Name] = "CMJ Ecc Decel Asym %", 'Criteria'[Phase ID] = MAX('Criteria'[Phase ID]))
+			RETURN
+			IF(ISBLANK([Latest CMJ Ecc Decel Asym %]), "—", IF(ABS([Latest CMJ Ecc Decel Asym %]) <= Threshold, "✓", IF([CMJ Ecc Operated Limb Dominant] = 1, "✓ ★", "✗")))
+		lineageTag: da21bfad-899c-49cd-aebc-12e94bc858b0
+
+	measure 'CMJ Conc Status' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]), 'Criteria'[Metric Name] = "CMJ Conc Asym %", 'Criteria'[Phase ID] = MAX('Criteria'[Phase ID]))
+			RETURN
+			IF(ISBLANK([Latest CMJ Conc Asym %]), "—", IF(ABS([Latest CMJ Conc Asym %]) <= Threshold, "✓", IF([CMJ Conc Operated Limb Dominant] = 1, "✓ ★", "✗")))
+		lineageTag: a6f0fd91-ed5f-4e0c-90b9-326403c1390b
+
+	measure 'Latest Squat Ecc Decel Asym %' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestSquat'[Date]))
+			RETURN
+			CALCULATE(AVERAGE('rtp_latestSquat'[Ecc Decel Asym %]),
+			    'rtp_latestSquat'[Date] = LatestDate)
+		lineageTag: fd57f9c6-9679-4fba-bd62-852c29b23ad0
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest SL Stand Excursion L' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestSLStand'[Date]))
+			RETURN
+			CALCULATE(AVERAGE('rtp_latestSLStand'[Total Excursion L (mm)]),
+			    'rtp_latestSLStand'[Date] = LatestDate)
+		lineageTag: 82afc284-0244-42d0-9b88-4f4b286d1395
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest SL Stand Excursion R' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestSLStand'[Date]))
+			RETURN
+			CALCULATE(AVERAGE('rtp_latestSLStand'[Total Excursion R (mm)]),
+			    'rtp_latestSLStand'[Date] = LatestDate)
+		lineageTag: 0aeba41c-f576-455a-8ec9-2b8bb05a74b5
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Squat Ecc Decel Status' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]), 'Criteria'[Metric Name] = "Squat Ecc Decel Asym %", 'Criteria'[Phase ID] = MAX('Criteria'[Phase ID]))
+			VAR CurrentValue = [Latest Squat Ecc Decel Asym %]
+			RETURN
+			IF(ISBLANK(CurrentValue), "—", IF(CurrentValue <= Threshold, "✓", "✗"))
+		lineageTag: d6c5e289-f2d6-41a2-a292-4173c2cf29ef
+
+	measure 'SL Stand L Status' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]), 'Criteria'[Metric Name] = "SL Stand Total Excursion L", 'Criteria'[Phase ID] = MAX('Criteria'[Phase ID]))
+			VAR CurrentValue = [Latest SL Stand Excursion L]
+			RETURN
+			IF(ISBLANK(CurrentValue), "—", IF(CurrentValue <= Threshold, "✓", "✗"))
+		lineageTag: 01f63f45-8237-43dd-b4e1-6a45d4b855b2
+
+	measure 'SL Stand R Status' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]), 'Criteria'[Metric Name] = "SL Stand Total Excursion R", 'Criteria'[Phase ID] = MAX('Criteria'[Phase ID]))
+			VAR CurrentValue = [Latest SL Stand Excursion R]
+			RETURN
+			IF(ISBLANK(CurrentValue), "—", IF(CurrentValue <= Threshold, "✓", "✗"))
+		lineageTag: 5d1869a7-3c98-4a1f-9714-4489d61862e5
+
+	measure 'Latest KF Prone Asym %' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Flexion - Prone")
+			VAR LForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Flexion - Prone",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			VAR RForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Flexion - Prone",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			RETURN
+			IF(ISBLANK(LForce) || ISBLANK(RForce) || (LForce + RForce) = 0, BLANK(),
+			    ABS(LForce - RForce) / ((LForce + RForce) / 2) * 100)
+		formatString: 0
+		lineageTag: d7850eb9-a68f-49d0-9e17-85d74f615fc1
+
+	measure 'Latest KE 45 Asym %' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (45)")
+			VAR LForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (45)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			VAR RForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (45)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			RETURN
+			IF(ISBLANK(LForce) || ISBLANK(RForce) || (LForce + RForce) = 0, BLANK(),
+			    ABS(LForce - RForce) / ((LForce + RForce) / 2) * 100)
+		lineageTag: 505c45b4-94c9-46f3-8169-f48bef1d0b25
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest Hip Abd Asym %' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Hip AD/AB",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Hip AD/AB - Supine (Knee)")
+			VAR LForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Hip AD/AB",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Hip AD/AB - Supine (Knee)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			VAR RForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Hip AD/AB",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Hip AD/AB - Supine (Knee)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			RETURN
+			IF(ISBLANK(LForce) || ISBLANK(RForce) || (LForce + RForce) = 0, BLANK(),
+			    ABS(LForce - RForce) / ((LForce + RForce) / 2) * 100)
+		lineageTag: 84c4e7b7-3249-4ce2-a95d-3b6f0ad21649
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest Hip Add Asym %' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Hip AD/AB",
+			    'rtp_latestForceFrames'[Direction] = "Squeeze",
+			    'rtp_latestForceFrames'[Position] = "Hip AD/AB - Supine (Knee)")
+			VAR LForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Hip AD/AB",
+			    'rtp_latestForceFrames'[Direction] = "Squeeze",
+			    'rtp_latestForceFrames'[Position] = "Hip AD/AB - Supine (Knee)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			VAR RForce = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Hip AD/AB",
+			    'rtp_latestForceFrames'[Direction] = "Squeeze",
+			    'rtp_latestForceFrames'[Position] = "Hip AD/AB - Supine (Knee)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+			RETURN
+			IF(ISBLANK(LForce) || ISBLANK(RForce) || (LForce + RForce) = 0, BLANK(),
+			    ABS(LForce - RForce) / ((LForce + RForce) / 2) * 100)
+		lineageTag: 6b9e024a-dfde-440f-ab9a-a399569efc66
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'KE 45 Status' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]), 'Criteria'[Metric Name] = "KE 45 Asym %", 'Criteria'[Phase ID] = MAX('Criteria'[Phase ID]))
+			VAR CurrentValue = [Latest KE 45 Asym %]
+			RETURN
+			IF(ISBLANK(CurrentValue), "—", IF(CurrentValue <= Threshold, "✓", "✗"))
+		lineageTag: b6bf508a-2a71-4c04-b133-a38b15a91189
+
+	measure 'Hip Abd Status' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]), 'Criteria'[Metric Name] = "Hip Abd Asym %", 'Criteria'[Phase ID] = MAX('Criteria'[Phase ID]))
+			VAR CurrentValue = [Latest Hip Abd Asym %]
+			RETURN
+			IF(ISBLANK(CurrentValue), "—", IF(CurrentValue <= Threshold, "✓", "✗"))
+		lineageTag: 96423985-21ce-476c-b8dc-9b72977b3765
+
+	measure 'Hip Add Status' =
+			
+			VAR Threshold = CALCULATE(MAX('Criteria'[Threshold]), 'Criteria'[Metric Name] = "Hip Add Asym %", 'Criteria'[Phase ID] = MAX('Criteria'[Phase ID]))
+			VAR CurrentValue = [Latest Hip Add Asym %]
+			RETURN
+			IF(ISBLANK(CurrentValue), "—", IF(CurrentValue <= Threshold, "✓", "✗"))
+		lineageTag: 04a10316-75a9-468b-b0b3-a12b1d8798ad
+
+	measure 'Phase Rail HTML Hamstring' =
+			
+			VAR CurrentPhase = [Current Phase]
+			VAR Phase1Color = IF(CurrentPhase = "Early", "#F07167", "#3A4634")
+			VAR Phase2Color = IF(CurrentPhase = "Mid", "#F2C14E", "#3A4634")
+			VAR Phase3Color = IF(CurrentPhase = "RTS", "#7FB7BE", "#3A4634")
+			RETURN
+			"<div style=""display:flex;align-items:center;width:100%;"">" &
+			"<div style=""flex:1;text-align:center;background:" & Phase1Color & ";color:#F1EEE2;padding:16px 8px;border-radius:8px;font-size:16px;font-weight:bold;margin:4px;"">Early<br/><span style=""font-size:12px;font-weight:normal;opacity:0.8;"">0–2 weeks</span></div>" &
+			"<div style=""color:#F1EEE2;opacity:0.3;padding:0 4px;font-size:20px;"">▶</div>" &
+			"<div style=""flex:1;text-align:center;background:" & Phase2Color & ";color:#F1EEE2;padding:16px 8px;border-radius:8px;font-size:16px;font-weight:bold;margin:4px;"">Mid<br/><span style=""font-size:12px;font-weight:normal;opacity:0.8;"">2–4 weeks</span></div>" &
+			"<div style=""color:#F1EEE2;opacity:0.3;padding:0 4px;font-size:20px;"">▶</div>" &
+			"<div style=""flex:1;text-align:center;background:" & Phase3Color & ";color:#F1EEE2;padding:16px 8px;border-radius:8px;font-size:16px;font-weight:bold;margin:4px;"">RTS<br/><span style=""font-size:12px;font-weight:normal;opacity:0.8;"">4–6 weeks</span></div>" &
+			"</div>"
+		lineageTag: 4a5ac4f7-8d25-4cdb-b542-bff4a1e8728e
+
+	measure 'Prone Hamstring L (N)' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Flexion - Prone")
+			RETURN
+			CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Flexion - Prone",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+		lineageTag: 3ba24431-b72d-4d3d-b445-bdcfabcc497a
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Prone Hamstring R (N)' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Flexion - Prone")
+			RETURN
+			CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Flexion",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Flexion - Prone",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+		lineageTag: b2ec8577-295e-494e-b3ce-3d5467dba6df
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest KE 45 L (N)' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (45)")
+			RETURN
+			CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (45)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+		lineageTag: 200071c2-ca1c-4294-ad44-2648f0f5c054
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest KE 45 R (N)' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (45)")
+			RETURN
+			CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Knee Extension",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (45)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+		lineageTag: 320d241c-cefc-44e5-9889-e76834a35192
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest Hip Abd L (N)' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Hip AD/AB",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Hip AD/AB - Supine (Knee)")
+			RETURN
+			CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Hip AD/AB",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Hip AD/AB - Supine (Knee)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+		lineageTag: 18c22785-c8ee-4172-ae8b-55efc97a3647
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest Hip Abd R (N)' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Hip AD/AB",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Hip AD/AB - Supine (Knee)")
+			RETURN
+			CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Hip AD/AB",
+			    'rtp_latestForceFrames'[Direction] = "Pull",
+			    'rtp_latestForceFrames'[Position] = "Hip AD/AB - Supine (Knee)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+		lineageTag: 5b916947-8814-419a-a4c1-a17f652b3d63
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest Hip Add L (N)' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Hip AD/AB",
+			    'rtp_latestForceFrames'[Direction] = "Squeeze",
+			    'rtp_latestForceFrames'[Position] = "Hip AD/AB - Supine (Knee)")
+			RETURN
+			CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Hip AD/AB",
+			    'rtp_latestForceFrames'[Direction] = "Squeeze",
+			    'rtp_latestForceFrames'[Position] = "Hip AD/AB - Supine (Knee)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+		lineageTag: 0d4753f6-f57d-4519-b9a1-e61468762751
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest Hip Add R (N)' =
+			
+			VAR LatestDate = CALCULATE(MAX('rtp_latestForceFrames'[Date]),
+			    'rtp_latestForceFrames'[Test] = "Hip AD/AB",
+			    'rtp_latestForceFrames'[Direction] = "Squeeze",
+			    'rtp_latestForceFrames'[Position] = "Hip AD/AB - Supine (Knee)")
+			RETURN
+			CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]),
+			    'rtp_latestForceFrames'[Test] = "Hip AD/AB",
+			    'rtp_latestForceFrames'[Direction] = "Squeeze",
+			    'rtp_latestForceFrames'[Position] = "Hip AD/AB - Supine (Knee)",
+			    'rtp_latestForceFrames'[Date] = LatestDate)
+		lineageTag: 604f8118-fa3b-4feb-8799-59633bc92b23
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest H/Q Ratio' =
+			
+			VAR OperatedLimb = MAX('Athlete'[Operated Limb])
+			VAR KFForce = IF(OperatedLimb = "Right", [Prone Hamstring R (N)], [Prone Hamstring L (N)])
+			VAR KEForce = IF(OperatedLimb = "Right", [Latest KE 45 R (N)], [Latest KE 45 L (N)])
+			RETURN
+			IF(ISBLANK(KFForce) || ISBLANK(KEForce) || KEForce = 0, BLANK(),
+			    DIVIDE(KFForce, KEForce))
+		lineageTag: af1e3519-3d00-42e2-95ee-5f0b9fb0a560
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Latest AD/AB Ratio' =
+			
+			VAR OperatedLimb = MAX('Athlete'[Operated Limb])
+			VAR AddForce = IF(OperatedLimb = "Right", [Latest Hip Add R (N)], [Latest Hip Add L (N)])
+			VAR AbdForce = IF(OperatedLimb = "Right", [Latest Hip Abd R (N)], [Latest Hip Abd L (N)])
+			RETURN
+			IF(ISBLANK(AddForce) || ISBLANK(AbdForce) || AbdForce = 0, BLANK(),
+			    DIVIDE(AddForce, AbdForce))
+		lineageTag: c5eac620-5e48-4ede-bf1e-d4b556d1e782
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Selected Surgery Date' = MAX('Athlete'[Surgery Date])
+		formatString: General Date
+		lineageTag: bf5c6b50-a4d6-4e38-ae14-dc64895ff695
+
+	measure 'KE Operated (N)' =
+			
+			VAR Limb = SELECTEDVALUE('Athlete'[Operated Limb])
+			VAR L = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]), 'rtp_latestForceFrames'[Test] = "Knee Extension", 'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)")
+			VAR R = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]), 'rtp_latestForceFrames'[Test] = "Knee Extension", 'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)")
+			RETURN
+			IF(ISBLANK(Limb), BLANK(), IF(Limb = "Right", R, L))
+		formatString: 0
+		lineageTag: e9fddd18-8960-5f99-9657-5964fa8d1cc1
+
+	measure 'KE Uninvolved (N)' =
+			
+			VAR Limb = SELECTEDVALUE('Athlete'[Operated Limb])
+			VAR L = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]), 'rtp_latestForceFrames'[Test] = "Knee Extension", 'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)")
+			VAR R = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]), 'rtp_latestForceFrames'[Test] = "Knee Extension", 'rtp_latestForceFrames'[Position] = "Knee Extension - Seated (90)")
+			RETURN
+			IF(ISBLANK(Limb), BLANK(), IF(Limb = "Right", L, R))
+		formatString: 0
+		lineageTag: a7e9aa2a-073a-58c2-9c90-3a7a0a81da12
+
+	measure 'KF Operated (N)' =
+			
+			VAR Limb = SELECTEDVALUE('Athlete'[Operated Limb])
+			VAR L = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]), 'rtp_latestForceFrames'[Test] = "Knee Flexion")
+			VAR R = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]), 'rtp_latestForceFrames'[Test] = "Knee Flexion")
+			RETURN
+			IF(ISBLANK(Limb), BLANK(), IF(Limb = "Right", R, L))
+		formatString: 0
+		lineageTag: 2f2726dd-0a6e-5c06-b599-b77277cba5e4
+
+	measure 'KF Uninvolved (N)' =
+			
+			VAR Limb = SELECTEDVALUE('Athlete'[Operated Limb])
+			VAR L = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]), 'rtp_latestForceFrames'[Test] = "Knee Flexion")
+			VAR R = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]), 'rtp_latestForceFrames'[Test] = "Knee Flexion")
+			RETURN
+			IF(ISBLANK(Limb), BLANK(), IF(Limb = "Right", L, R))
+		formatString: 0
+		lineageTag: ea4add46-3d9c-560d-b1bf-ffd8dc07f46a
+
+	measure 'Hip Ext Operated (N)' =
+			
+			VAR Limb = SELECTEDVALUE('Athlete'[Operated Limb])
+			VAR L = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]), 'rtp_latestForceFrames'[Test] = "Hip Extension", 'rtp_latestForceFrames'[Position] = "Hip Extension - Prone")
+			VAR R = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]), 'rtp_latestForceFrames'[Test] = "Hip Extension", 'rtp_latestForceFrames'[Position] = "Hip Extension - Prone")
+			RETURN
+			IF(ISBLANK(Limb), BLANK(), IF(Limb = "Right", R, L))
+		formatString: 0
+		lineageTag: c5d0001b-8d71-565f-a124-274052dd6dd4
+
+	measure 'Hip Ext Uninvolved (N)' =
+			
+			VAR Limb = SELECTEDVALUE('Athlete'[Operated Limb])
+			VAR L = CALCULATE(AVERAGE('rtp_latestForceFrames'[L Max Force (N)]), 'rtp_latestForceFrames'[Test] = "Hip Extension", 'rtp_latestForceFrames'[Position] = "Hip Extension - Prone")
+			VAR R = CALCULATE(AVERAGE('rtp_latestForceFrames'[R Max Force (N)]), 'rtp_latestForceFrames'[Test] = "Hip Extension", 'rtp_latestForceFrames'[Position] = "Hip Extension - Prone")
+			RETURN
+			IF(ISBLANK(Limb), BLANK(), IF(Limb = "Right", L, R))
+		formatString: 0
+		lineageTag: c14336bc-7e98-5706-ad12-f96268d0d3be
+
+	measure 'H:Q Operated' =
+			
+			DIVIDE([KF Operated (N)], [KE Operated (N)])
+		formatString: 0.00
+		lineageTag: 35f02747-3e4b-5b73-809c-0adb7ab5767d
+
+	measure 'H:Q Uninvolved' =
+			
+			DIVIDE([KF Uninvolved (N)], [KE Uninvolved (N)])
+		formatString: 0.00
+		lineageTag: c0d368d7-68aa-5619-8657-259478162b8e
+
+	measure 'Quad LSI %' =
+			
+			DIVIDE([KE Operated (N)], [KE Uninvolved (N)]) * 100
+		formatString: 0
+		lineageTag: 6cddf61d-bbe2-5078-978e-8e68829afeaa
+
+	measure 'Hamstring LSI %' =
+			
+			DIVIDE([KF Operated (N)], [KF Uninvolved (N)]) * 100
+		formatString: 0
+		lineageTag: 84928228-bb30-577e-8492-cbd477cd9027
+
+	measure 'Latest Ham Operated (N)' = IF(SELECTEDVALUE('Athlete'[Operated Limb]) = "Right", [Latest Ham R (N)], [Latest Ham L (N)])
+		formatString: 0
+		lineageTag: 87d55f44-6f2f-5298-809e-9065d72d9bf2
+
+	measure 'Latest Ham Uninvolved (N)' = IF(SELECTEDVALUE('Athlete'[Operated Limb]) = "Right", [Latest Ham L (N)], [Latest Ham R (N)])
+		formatString: 0
+		lineageTag: 95783306-764e-5434-bd5f-3101d4ebb738
+
+	measure 'Latest Ham LSI %' = DIVIDE([Latest Ham Operated (N)], [Latest Ham Uninvolved (N)]) * 100
+		formatString: 0
+		lineageTag: 36708dbd-27fe-5693-a712-d30e5ff96a6e
+
+	measure 'Latest Ham LSI Colour' = VAR L = [Latest Ham LSI %] RETURN IF(ISBLANK(L), "#BDBBA6", IF(L >= 90, "#6CC28A", IF(L >= 80, "#F2C14E", "#F07167")))
+		lineageTag: 300bd20d-640f-59d0-8b56-d9931d00f107
+
+	measure 'Latest Quad Operated (N)' = IF(SELECTEDVALUE('Athlete'[Operated Limb]) = "Right", [Latest Quad R (N)], [Latest Quad L (N)])
+		formatString: 0
+		lineageTag: fcb14f32-1334-5237-b6f5-20802be70e41
+
+	measure 'Latest Quad Uninvolved (N)' = IF(SELECTEDVALUE('Athlete'[Operated Limb]) = "Right", [Latest Quad L (N)], [Latest Quad R (N)])
+		formatString: 0
+		lineageTag: 8cacfc21-a04c-523a-a2e6-84f6277e72b1
+
+	measure 'Latest Quad LSI %' = DIVIDE([Latest Quad Operated (N)], [Latest Quad Uninvolved (N)]) * 100
+		formatString: 0
+		lineageTag: 26aa448c-75c4-5c29-a710-f7f2a391fbbc
+
+	measure 'Latest Quad LSI Colour' = VAR L = [Latest Quad LSI %] RETURN IF(ISBLANK(L), "#BDBBA6", IF(L >= 90, "#6CC28A", IF(L >= 80, "#F2C14E", "#F07167")))
+		lineageTag: ddfe1353-1d69-5275-b99e-9f4dc8249f2b
+
+	measure 'Ham Chart Title' = "Hamstrings" & IF(ISBLANK([Latest Ham LSI %]), "", "  ·  LSI " & FORMAT([Latest Ham LSI %], "0") & "%")
+		lineageTag: 3d9666a5-4489-50e2-805b-da6cf9134e00
+
+	measure 'Quad Chart Title' = "Quads" & IF(ISBLANK([Latest Quad LSI %]), "", "  ·  LSI " & FORMAT([Latest Quad LSI %], "0") & "%")
+		lineageTag: 5f168c42-88b4-5e32-a3f0-296ca96d1465
+
+	measure 'FF Show Date' =
+			
+			VAR D = MAX('rtp_latestForceFrames'[Date])
+			VAR Surgery = SELECTEDVALUE('Athlete'[Surgery Date])
+			VAR AllDates = CALCULATETABLE(VALUES('rtp_latestForceFrames'[Date]), REMOVEFILTERS('rtp_latestForceFrames'[Date]))
+			VAR Baseline = MAXX(FILTER(AllDates, [Date] < Surgery), [Date])
+			VAR PostRank = COUNTROWS(FILTER(AllDates, (ISBLANK(Surgery) || [Date] >= Surgery) && [Date] > D)) + 1
+			RETURN
+			IF(ISBLANK(D), BLANK(), IF((NOT ISBLANK(Surgery) && D = Baseline) || ((ISBLANK(Surgery) || D >= Surgery) && PostRank <= 6), 1, BLANK()))
+		formatString: 0
+		lineageTag: 115a9ac8-5715-5892-add1-36889cd2f3a2
+
+	measure 'Ham Bar Operated (N)' = IF([FF Show Date] = 1, [KF Operated (N)])
+		formatString: 0
+		lineageTag: bf51df88-eb56-58d6-9486-8c705a74bceb
+
+	measure 'Ham Bar Uninvolved (N)' = IF([FF Show Date] = 1, [KF Uninvolved (N)])
+		formatString: 0
+		lineageTag: c6af655f-503e-5601-816d-9294dee00484
+
+	measure 'Ham Bar LSI %' = IF([FF Show Date] = 1, [Hamstring LSI %])
+		formatString: 0\%
+		lineageTag: 700ebbe2-bb58-5b59-a50b-b955c96cfe6a
+
+	measure 'Quad Bar Operated (N)' = IF([FF Show Date] = 1, [KE Operated (N)])
+		formatString: 0
+		lineageTag: 722d6fb5-f3d7-5d20-b0dd-fe9b60a3bbb2
+
+	measure 'Quad Bar Uninvolved (N)' = IF([FF Show Date] = 1, [KE Uninvolved (N)])
+		formatString: 0
+		lineageTag: 06f2a43d-3c88-58c4-83b2-d38f24ff114c
+
+	measure 'Quad Bar LSI %' = IF([FF Show Date] = 1, [Quad LSI %])
+		formatString: 0\%
+		lineageTag: 26cbf100-48f6-53b0-9a19-4102bc37fcea
+
+	column Column1
+		dataType: string
+		lineageTag: 98ef9fc4-3f5d-4e87-a4a6-6891624b81f2
+		summarizeBy: none
+		sourceColumn: Column1
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'KF/KE RFD Asym Color' =
+			
+			VAR CurrentValue = [Latest KF/KE RFD Asym %]
+			VAR PassFail = [KF/KE RFD Asym Pass]
+			RETURN
+			IF(ISBLANK(CurrentValue), "#5A6650",
+			    IF(PassFail = 1, "#6CC28A", "#F07167"))
+		lineageTag: 56e40f8e-db70-460e-93e5-cc3b066ac349
+		summarizeBy: none
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'RTS Measures' = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i45WCgoJVvBNTSwuLUotVoqNBQA=", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Column1 = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+

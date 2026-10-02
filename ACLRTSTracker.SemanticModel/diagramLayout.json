@@ -1,0 +1,148 @@
+{
+  "version": "1.1.0",
+  "diagrams": [
+    {
+      "ordinal": 0,
+      "scrollPosition": {
+        "x": 692.52361024883317,
+        "y": 311.92179139306944
+      },
+      "nodes": [
+        {
+          "location": {
+            "x": 13.259725000014214,
+            "y": 612.15361699999664
+          },
+          "nodeIndex": "Athlete",
+          "nodeLineageTag": "e80f5b89-019e-4aae-8536-f1b9bbdd745f",
+          "size": {
+            "height": 176,
+            "width": 234
+          },
+          "zIndex": 8
+        },
+        {
+          "location": {
+            "x": 2038,
+            "y": -12
+          },
+          "nodeIndex": "Criteria",
+          "nodeLineageTag": "27469e79-4e5d-4dc0-8641-097959ffd8a8",
+          "size": {
+            "height": 272,
+            "width": 234
+          },
+          "zIndex": 6
+        },
+        {
+          "location": {
+            "x": 1754,
+            "y": 36
+          },
+          "nodeIndex": "Phases",
+          "nodeLineageTag": "8c35b228-5d3e-4852-9478-625dc9e42b23",
+          "size": {
+            "height": 176,
+            "width": 234
+          },
+          "zIndex": 7
+        },
+        {
+          "location": {
+            "x": 2322,
+            "y": 446.16098072341225
+          },
+          "nodeIndex": "RTS Measures",
+          "size": {
+            "height": 104,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 2606,
+            "y": 446.16098072341225
+          },
+          "nodeIndex": "CMJ Metrics",
+          "nodeLineageTag": "2f908b35-26c3-476d-8b24-30caef72b285",
+          "size": {
+            "height": 104,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 2890,
+            "y": 446.16098072341225
+          },
+          "nodeIndex": "CMJ Metrics bottom 3",
+          "size": {
+            "height": 104,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 419.9192998712565,
+            "y": 936.37671267852829
+          },
+          "nodeIndex": "rtp_latestSquat",
+          "nodeLineageTag": "a829df03-3e26-4952-a242-9e5036352de4",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 568.42945653723962,
+            "y": 548.006149561483
+          },
+          "nodeIndex": "rtp_latestSLStand",
+          "nodeLineageTag": "dac369a6-2b5f-4c2d-be69-fdd6f8f24916",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 0,
+            "y": 25
+          },
+          "nodeIndex": "rtp_latestCMJ",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 0,
+            "y": 1000.5362545563123
+          },
+          "nodeIndex": "rtp_latestForceFrames",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        }
+      ],
+      "name": "All tables",
+      "zoomValue": 69.8893139291081,
+      "pinKeyFieldsToTop": false,
+      "showExtraHeaderInfo": false,
+      "hideKeyFieldsWhenCollapsed": false,
+      "tablesLocked": false
+    }
+  ],
+  "selectedDiagram": "All tables",
+  "defaultDiagram": "All tables"
+}

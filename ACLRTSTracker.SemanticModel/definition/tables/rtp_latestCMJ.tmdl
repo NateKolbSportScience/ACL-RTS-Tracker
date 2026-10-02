@@ -1,0 +1,173 @@
+table rtp_latestCMJ
+	lineageTag: 52b125a0-b75d-5bbc-a0ca-32e0669a1725
+
+	column Name
+		dataType: string
+		lineageTag: d7a443c9-293c-53b5-a961-9e5548c5024c
+		summarizeBy: none
+		sourceColumn: Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: a08fea17-a1f7-5cca-86f8-ea7af5e9d181
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Jump Height (Imp-Mom) (cm)'
+		dataType: double
+		lineageTag: 3f6d6511-50ad-50d5-8296-b6121ad19074
+		summarizeBy: none
+		sourceColumn: Jump Height (Imp-Mom) (cm)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Contraction Time (ms)'
+		dataType: double
+		lineageTag: 300a518e-5851-5afe-9d45-afe8467f1654
+		summarizeBy: none
+		sourceColumn: Contraction Time (ms)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Peak Power / BM (W/kg)'
+		dataType: double
+		lineageTag: 46bae5a3-a2d9-57ee-bfd6-c0ba150910a4
+		summarizeBy: none
+		sourceColumn: Peak Power / BM (W/kg)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Vertical Velocity at Takeoff (m/s)'
+		dataType: double
+		lineageTag: ce090b61-cc72-5774-b1c3-56aca33f833e
+		summarizeBy: none
+		sourceColumn: Vertical Velocity at Takeoff (m/s)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Eccentric Braking RFD (N/s)'
+		dataType: double
+		lineageTag: bdea83c0-3934-5efc-853b-9ee913b8ac70
+		summarizeBy: none
+		sourceColumn: Eccentric Braking RFD (N/s)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Force at Zero Velocity (N)'
+		dataType: double
+		lineageTag: 135ceccc-7ee0-5001-b12a-3d5857dcfeca
+		summarizeBy: none
+		sourceColumn: Force at Zero Velocity (N)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Concentric Impulse % (Asym) (%)'
+		dataType: string
+		lineageTag: a861f489-5ad0-526e-b635-50f51c9e4018
+		summarizeBy: none
+		sourceColumn: Concentric Impulse % (Asym) (%)
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Eccentric Braking Impulse % (Asym) (%)'
+		dataType: string
+		lineageTag: 5adce0ad-c7c6-50ac-a5e1-ec974b26faf4
+		summarizeBy: none
+		sourceColumn: Eccentric Braking Impulse % (Asym) (%)
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Test Type'
+		dataType: string
+		lineageTag: 533fb4bc-2884-5708-85d2-e522c21a66ee
+		summarizeBy: none
+		sourceColumn: Test Type
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Eccentric Braking Impulse % (Asym) Direction'
+		dataType: double
+		lineageTag: 0827ae72-023f-5587-99cf-7061619654c0
+		summarizeBy: none
+		sourceColumn: Eccentric Braking Impulse % (Asym) Direction
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Concentric Impulse % (Asym) Direction'
+		dataType: double
+		lineageTag: 9cf218c5-3f68-5b73-8433-deba6e5bc857
+		summarizeBy: none
+		sourceColumn: Concentric Impulse % (Asym) Direction
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition rtp_latestCMJ = m
+		mode: import
+		source =
+				// ForceDecks countermovement jumps (bilateral CMJ rows only).
+				let
+				    Raw = Athletes[Of]("cmj"),
+				    CmjOnly = if not Table.HasColumns(Raw, "testtype") then Raw
+				        else Table.SelectRows(Raw, each
+				            let t = if [testtype] = null then "" else Text.Lower(Text.From([testtype]))
+				            in (Text.Contains(t, "cmj") or Text.Contains(t, "countermovement"))
+				               and not Text.Contains(t, "sl") and not Text.Contains(t, "single") and not Text.Contains(t, "rebound")),
+				    Spec = {
+				        {"Name", {"Name", "Athlete", "Athlete Name"}, "text"},
+				        {"ExternalId", {"ExternalId", "External Id"}, "text"},
+				        {"Date", {"Date", "Test Date"}, "date"},
+				        {"Jump Height (Imp-Mom) (cm)", {"Jump Height (Imp-Mom) [cm]"}, "number"},
+				        {"__JumpHeightIn", {"Jump Height (Imp-Mom) in Inches [in]", "Jump Height (Imp-Mom) [in]"}, "number"},
+				        {"Contraction Time (ms)", {"Contraction Time [ms]"}, "number"},
+				        {"Peak Power / BM (W/kg)", {"Peak Power / BM [W/kg]", "Peak Power/BM [W/kg]"}, "number"},
+				        {"Vertical Velocity at Takeoff (m/s)", {"Vertical Velocity at Takeoff [m/s]"}, "number"},
+				        {"Eccentric Braking RFD (N/s)", {"Eccentric Braking RFD [N/s]"}, "number"},
+				        {"Force at Zero Velocity (N)", {"Force at Zero Velocity [N]"}, "number"},
+				        {"Concentric Impulse % (Asym) (%)", {"Concentric Impulse % (Asym) (%)", "Concentric Impulse % (Asym)"}, "text"},
+				        {"Eccentric Braking Impulse % (Asym) (%)", {"Eccentric Braking Impulse % (Asym) (%)", "Eccentric Braking Impulse % (Asym)"}, "text"}
+				    },
+				    Shaped = Fx[Shape](CmjOnly, Spec),
+				    Rows = Table.FromRecords(Table.TransformRows(Shaped, (r) => r & [
+				        Name = Athletes[Display](Athletes[Resolve](r[Name], r[ExternalId])),
+				        #"Test Type" = "CMJ",
+				        #"Jump Height (Imp-Mom) (cm)" = if r[#"Jump Height (Imp-Mom) (cm)"] <> null then r[#"Jump Height (Imp-Mom) (cm)"]
+				            else if r[__JumpHeightIn] <> null then r[__JumpHeightIn] * 2.54 else null,
+				        #"Eccentric Braking Impulse % (Asym) Direction" = Fx[Asym](r[#"Eccentric Braking Impulse % (Asym) (%)"]),
+				        #"Concentric Impulse % (Asym) Direction" = Fx[Asym](r[#"Concentric Impulse % (Asym) (%)"])]),
+				        Table.ColumnNames(Shaped) & {"Test Type", "Eccentric Braking Impulse % (Asym) Direction", "Concentric Impulse % (Asym) Direction"}, MissingField.UseNull),
+				    Valid = Table.SelectRows(Table.RemoveColumns(Rows, {"__JumpHeightIn", "ExternalId"}), each [Name] <> null and [Date] <> null),
+				    Typed = Table.TransformColumnTypes(Table.Distinct(Valid), {
+				        {"Name", type text}, {"Test Type", type text}, {"Date", type date},
+				        {"Jump Height (Imp-Mom) (cm)", type number}, {"Contraction Time (ms)", type number}, {"Peak Power / BM (W/kg)", type number},
+				        {"Vertical Velocity at Takeoff (m/s)", type number}, {"Eccentric Braking RFD (N/s)", type number},
+				        {"Force at Zero Velocity (N)", type number}, {"Concentric Impulse % (Asym) (%)", type text},
+				        {"Eccentric Braking Impulse % (Asym) (%)", type text}, {"Eccentric Braking Impulse % (Asym) Direction", type number},
+				        {"Concentric Impulse % (Asym) Direction", type number}})
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table
+

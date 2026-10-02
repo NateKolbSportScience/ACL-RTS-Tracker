@@ -1,0 +1,27 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_QueryOrder = ["DataFolder", "AnonymizeNames", "ExportCulture", "Fx", "ValdFiles", "Athletes", "rtp_latestCMJ", "rtp_latestSquat", "rtp_latestSLStand", "rtp_latestForceFrames", "Athlete", "Criteria", "Phases", "RTS Measures", "CMJ Metrics", "CMJ Metrics bottom 3"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table rtp_latestCMJ
+ref table rtp_latestSquat
+ref table rtp_latestSLStand
+ref table rtp_latestForceFrames
+ref table Athlete
+ref table Criteria
+ref table Phases
+ref table 'RTS Measures'
+ref table 'CMJ Metrics'
+ref table 'CMJ Metrics bottom 3'
+
+ref cultureInfo en-US
+

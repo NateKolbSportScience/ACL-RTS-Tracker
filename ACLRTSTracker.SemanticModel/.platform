@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "ACL RTS Tracker"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "8183988b-445e-59cd-8d84-dbf467eb542a"
+  }
+}

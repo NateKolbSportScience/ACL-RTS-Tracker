@@ -1,0 +1,183 @@
+expression DataFolder = "" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=false]
+	lineageTag: 6dba2cdf-917e-5cf4-b4af-d6784a3df0e6
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Text
+
+expression AnonymizeNames = true meta [IsParameterQuery=true, Type="Logical", IsParameterQueryRequired=true]
+	lineageTag: 41543466-d1b4-5822-bbd2-6e69e1a626fb
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Logical
+
+expression ExportCulture = "en-US" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 4bf6136a-feca-5a57-bd7e-0b548bb91d28
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Text
+
+expression Fx =
+		// Shared helpers used by every import query (not loaded as a table).
+		let
+		    // Header key: lower-case letters and digits only, so "Jump Height (Imp-Mom) [cm]",
+		    // "jump height (imp-mom) (cm)" and R-style "Jump.Height..Imp.Mom...cm." all match
+		    Key = (h as any) as text =>
+		        Text.Select(Text.Lower(if h = null then "" else Text.From(h)), {"a".."z", "0".."9"}),
+		    CleanName = (n as any) as nullable text =>
+		        let parts = if n = null then {} else List.Select(Text.SplitAny(Text.Trim(Text.From(n)), " #(tab)#(00A0)"), each _ <> "")
+		        in if List.IsEmpty(parts) then null else Text.Combine(parts, " "),
+		    ToNumber = (v as any) as nullable number =>
+		        if v = null then null
+		        else if v is number then v
+		        else
+		            let t = Text.Remove(Text.Trim(Text.From(v)), {"%", " ", "#(00A0)"})
+		            in if t = "" then null else try Number.FromText(t, "en-US") otherwise null,
+		    // "2026/09/08" or "2026-09-08" (year first) reads the same whatever ExportCulture is set to
+		    YearFirst = (t as text) as nullable date =>
+		        let p = Text.SplitAny(Text.BeforeDelimiter(t & " ", " "), "/-.")
+		        in if List.Count(p) = 3 and Text.Length(p{0}) = 4
+		           then try #date(Number.FromText(p{0}), Number.FromText(p{1}), Number.FromText(p{2})) otherwise null
+		           else null,
+		    ToDate = (v as any) as nullable date =>
+		        if v = null then null
+		        else if v is date then v
+		        else if v is datetime then DateTime.Date(v)
+		        else
+		            let t = Text.Trim(Text.From(v))
+		            in if t = "" then null
+		               else if YearFirst(t) <> null then YearFirst(t)
+		               else try Date.FromText(t, ExportCulture)
+		               otherwise try DateTime.Date(DateTime.FromText(t, ExportCulture))
+		               otherwise try Date.FromText(Text.BeforeDelimiter(t, " "), ExportCulture)
+		               otherwise null,
+		    // "12.3 L" -> -12.3, "8.1 R" -> 8.1 (left negative, right positive)
+		    Asym = (v as any) as nullable number =>
+		        if v = null then null
+		        else if v is number then v
+		        else
+		            let
+		                tokens = List.Select(Text.SplitAny(Text.Upper(Text.Remove(Text.Trim(Text.From(v)), {"%"})), " ()#(00A0)"), each _ <> ""),
+		                nums = List.RemoveNulls(List.Transform(tokens, each try Number.FromText(_, "en-US") otherwise null)),
+		                n = List.First(nums, null),
+		                isLeft = List.Contains(tokens, "L") or List.Contains(tokens, "LEFT")
+		            in
+		                if n = null then null else if isLeft then -Number.Abs(n) else Number.Abs(n),
+		    Converters = [
+		        text = (v) => if v = null then null else let t = Text.Trim(Text.From(v)) in if t = "" then null else t,
+		        number = ToNumber,
+		        date = ToDate
+		    ],
+		    // Read one CSV: detect delimiter, promote headers, normalise header names with Key
+		    ReadCsv = (content as binary) as table =>
+		        let
+		            first = try Lines.FromBinary(content, null, null, 65001){0} otherwise "",
+		            delimiter = if List.Count(Text.Split(first, ";")) > List.Count(Text.Split(first, ",")) then ";" else ",",
+		            promoted = Table.PromoteHeaders(Csv.Document(content, [Delimiter = delimiter, Encoding = 65001, QuoteStyle = QuoteStyle.Csv]), [PromoteAllScalars = true]),
+		            old = Table.ColumnNames(promoted),
+		            keys = List.Transform(old, Key),
+		            unique = List.Accumulate(List.Positions(keys), {}, (acc, i) => acc & {if List.Contains(acc, keys{i}) then keys{i} & " #" & Text.From(i) else keys{i}})
+		        in
+		            Table.RenameColumns(promoted, List.Zip({old, unique})),
+		    // Which VALD export is this? Decided from the headers, so file names don't matter
+		    Kind = (t as table) as text =>
+		        let c = Table.ColumnNames(t), has = (k) => List.Contains(c, k), any = (p) => List.AnyTrue(List.Transform(c, each Text.StartsWith(_, p)))
+		        in if has("surgerydate") or has("operatedlimb") then "roster"
+		           else if has("test") and has("position") and (has("lmaxforcen") or has("maximbalance")) then "forceframe"
+		           else if any("cop") then "slstand"
+		           else if List.AnyTrue(List.Transform(c, each Text.Contains(_, "jumpheight"))) then "cmj"
+		           else if has("eccentricdecelerationimpulseasym") or has("concentricmeanforceasym") then "squat"
+		           else "other",
+		    // Map a table onto fixed output columns. Spec rows: {output column, {accepted headers}, type}
+		    Shape = (t as table, spec as list) as table =>
+		        let
+		            cols = Table.ColumnNames(t),
+		            resolve = (aliases as list) as nullable text => List.First(List.Select(List.Transform(aliases, Key), each List.Contains(cols, _)), null),
+		            keys = List.Transform(spec, each resolve(_{1}))
+		        in
+		            Table.FromRecords(
+		                Table.TransformRows(t, (r) =>
+		                    Record.FromList(
+		                        List.Transform(List.Positions(spec), (i) => if keys{i} = null then null else Record.Field(Converters, spec{i}{2})(Record.Field(r, keys{i}))),
+		                        List.Transform(spec, each _{0}))),
+		                List.Transform(spec, each _{0}), MissingField.UseNull)
+		in
+		    [Key = Key, CleanName = CleanName, ToNumber = ToNumber, ToDate = ToDate, Asym = Asym, ReadCsv = ReadCsv, Kind = Kind, Shape = Shape]
+	lineageTag: bd225f12-7998-54fd-853d-781338c8dccd
+
+	annotation PBI_ResultType = Record
+
+expression ValdFiles =
+		// Every CSV in DataFolder (subfolders included), or the built-in demo exports when DataFolder
+		// is blank, read and tagged with the kind of export it is. Not loaded as a table.
+		let
+		    UseDemo = DataFolder = null or Text.Trim(Text.From(DataFolder)) = "",
+		    Demo = (b64 as text) as binary => Binary.Decompress(Binary.FromText(b64, BinaryEncoding.Base64), Compression.Deflate),
+		    DemoFiles = #table({"Content", "Name", "Extension"}, {
+		        {Demo("nZBBS8NAEEbvhf6HPVaYNJtExRZEpK1QSG1oFY/LJhmz2ybZsJlY8+9tGguKeOlpmMv3Hu9ZFgiLT0JbynyZwrLcNbZlL22FsG1shsdnLglhXaE93pSFuohh1liLJbFIyRrZcg6RMmTY6yYcDlY62WPLVqapEeaL1drjHjzOQvC5f+N4nuNx2OhMEVyDIqrqqesmpihMWY8Peq8LTLUcG5u53eduK0y0zKdPOsdIknL7fXHaF47YEsoiNpLEm85zjWLkTfy7q/Guyh4OOiV1H3A+HKzrg8xTRgpZ2CT7lm1kHGv6FvTPgrcO9x0+gRDfCYKL/HqSOJLEiSR60tmr/vjlFSGdKwU/JIJOoq/kX2TR7Qpd/pdHjBJrqgrTP6G+AA=="), "athletes.csv", ".csv"},
+		        {Demo("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"), "forcedecks_cmj_demo.csv", ".csv"},
+		        {Demo("jVdNb9tGEL0X6H/gJUACrMmd/ZzVzU3cIqiUpK6AHgwfZIlohEiWYclt/e87O7ukRIZledk40OrN2/fmS59W+1rc/HOqnx9Xu48bsayPp2L5+lSLD6tTLZZb+vinP4q7X3+5F7f101EsV38exfVmsz1tD/SVYn5YbYq73cO9uFmv68fT83ZdfKjX9a5+XsUrxcf908vuWBdvirfXx9f9u+Ltm3fi/eGxubyoV4/Fz4fnde/KGe6/bgyD3H26L4a/zJ+8P7w80mv3h7/qPV0hrk+nr8Xden9f/PjDYrv+Vr8Wi8PLkQS4WXwGCeL335bCVrZSUlkBM+2KLwuBptTCCiGFLF1xSyfSCXTORdBKBGnFlbWlHgF1FWBGlTMNxfUlrCpDCyhLS38jOoEuiCtnSjcC6yuVYcNM6y4qlMBkJZ2KUYOme3T3yoVSjaCGqgU1sguqSYF5l2qATNWWMAIKSVZHoOB7TJHxIOrA//ioLARS1pOyrsRRXOUSsJpJ7PoFiW4gJeLJhgESZYJ1OAqrKsiwADPruoQDiToXnt4/F45hESWpIIltKM0IrK5CiwrYRU0qJMqUTRHVm6ytH00DU0FGlTMT+o5FVMMS6CSEIWd1VBZHHTOVUi2sNl1YwwRtcoyFwEDKes2G2dH6gobtzPQKTJeKacZTJbIWiCxJYMclILMa0H4WaHZLsq66NOwWlZeXTPV/QFtU26MK/PSUq4oFCFKRCJZ1laNFC7ZBVbKLatithJdl9Z4+d5xZY6hY6bYMbB/UXKiquW0ZqgTHVHEUVJmmapXr9xfPJDWjKq4tyBkwXgShrS01A9XlmjIq2ST57wBUBIHMcjLm1efj36vdpjh9rYv5y/rba3G7enjYnnIAlWmfW3ijhWySAZh16oqKu6Im6wJ3RZiGTw/wKQDOrMqyyGZGxGaexJYpL2LL8ZarGKcFAFkp3/RgK/sRHJM3fHL3CZR5aHhc6IkRqMHJLBKcZ0cbwuYKPKvk+SFXzsU0nBLCVL7JHdPDV8BvAOBRGvg/wdAoNZIrXU2NoHxTSaC7RoNhbOQh5fklQVPrVkBvgKkRYh6dx0DPakheeyqBJgR6coJ2gjwNp4Rwadqm5t2z2nMAxw5Yztmg6A2QZribGkDloYMzjf0AllePGMZQQacAiMADcuILyANonJY9jTCvTI6LwvFuQ2VjgLuEm1rPINs+7Ls+O2atWBxgJzDE5cmxRHJqAN3OJPVdx1CtOIoDBBlXHqoFL6cGCK1EFKCXqclYzfVsksm0+2AwXGzUSL/Up6aB6gat6W+G5QgXlYvtWJLchEAS3eDSXBpCI23BtMup4uU0XLBLux5kGyMgUMf0aTWTQ4DNThYJAnYJmryPOH4tZ5+k3kIHDQ5HxIcAK9cksPVdepL7ucqzCBjOqvhozQ/WA3C2auevhS47wDR68yoqeQ6RiYzYbo0DiOo80nuOqGRDSMMs7baI5AjySHMDcO68fMaC6jK0vM4EBvXML9CKGLjpYJyQ38H5qjduL9DSPmCYXLKavmWSx3lgDeCptrOD7vqB/EDLZ2ZHsztY5J9IQ4/F/NOI3Q1dNM84yG9NKzERw3j4ZhINFce5oYLpAhq213LSpJ2Y0iXe1OkXDAH+Cw=="), "forcedecks_squat_demo.csv", ".csv"},
+		        {Demo("lVdNTyNHEL1Hyn+YY1ZqPF3V1V++sVkURYEsYtHmgDgYGG2sBbzCRln+faqq5wNmANuX0dgzU6+7Xr1X1X8v7hpz9HPTPNwvbv+8MefNelOdP/1ozKfFpjHnS3788Z/q4q8/Ls1Z82Ntzhff1ubw5ma5Wa74k+p4tbipLm6vLs3vq9PqbHH/rakOqpPmZrm4PTjmGA/80sXd3WX12/GH7e+cvXzn8J4fLlcPB6erdbl7Pdab77Xxzlcbhjj6ef34sOZ1vwzy+sP2y5NmcV99bW5X18vNkzyq18OXrz/kLzWNnx4fFhsN2H7yyr9nH3795WR5/b15qk5Wj2tO+9HJZ7Bgvhx/+Wh87Wu06A3YuffV4YlJNHMGjLEG48wbhBkaohkYl+UuB/5FBmmWDCL/g/yifQ8i1JB6DHAjDJpFg4kvLs04NMolZOMhGHSC7wVoG0asscOAOcEII0gImllDlsMzEN9l3ktw8rcCwXaMXA/bID+BcLJUDuwEQhZNgbfiQKI7SaPfDgGFjWBgbm11+gIBJDNuRkIGmpgFgaJJ0QoPTp7thIChg/BxBIEcwQXhQpgP8oCCN9E72QTK33E7BNbQQuDc0ghCWGAIKMsNUe5yNtFSSR9nboeScnXu85Qmm8jGWb5wnhhB8k4J+CYLOpcxzOx2BKqhRbBzN65ZIdRJpbIknPGopJAJ1hdJMDzuAoHYY1AaYYjYdL0k4vCWL5SBdaHaU13swIWvATouME8ypbJwkilRtdwlkUYsPBWNb5d3u4s8NRAtKFsqR/QmrHgWt8fCEztM2AlhSJTzEwORRQoFSjXwT28ZzKkgoQhnBwOBVnppDmnig1AETLIhrVxKUeWn+VP9bYVItWt3AXOkCUQWEyGBQOEceRf8K6kutBRwFwikjgwHEzI0jCYKxQqtOiDlVt3FCre7YKfu1zqGJlxILeG1fqMrJSXG+LykPq//W9zeVJt/m+r48fr7E7faq6vlpoXDbkdtf0pz7DZke0fUXVmRoV6kuqxWmFYeI9q9wHhvsUOjPEILGkxkqDm0sjXPN6WWo1zCXmhga2zhcO5dK07bsxUNZIETTIfaUNh2UtuuIA81txsc+7LtGxjal9uDJMREMTZfmgm7W2Qek2+f0Z54VMeuFPum34JpcfAukrQx1Sz3MZB6cfJMXRT2BMPY+5x9mUrtA+oQEfiivVlaGiGILwUppP3QpCQ7NBgR56gzC68tWjpRsEyji2KFOgnkvdBCmTu0nY7BNFnaIKD4OIOB0+nG2aK3sCcY5p62seC0wnXW8MVG+C4yf6RDTtyfNuYMOte1cYQWOX1celnc0AlT3P0kkVabHwmlbk8vAdt7PEzQXDETkrsib9Yaeeg93u+J5vrWS6OS1PbKCtZhFErNEIoSQhm4eW9pT+vCaaO3z2dsab4ul+GOcxrEulLr/DiU5Gmz6Rzf9aEH29DWmIfQqStAEpOgQhL3LtZWaQZh8OBpaOYDaBiqwyS4K8MW15tv+7ucP2JsG4l7b93Qzbrqr8rAENup5rWT69iZdJCTetY+DNti10MTLFb6bNkiBZU6yWToRaMUOS/Btk0wvZcT350BOiKfRfZlBqGSkCgnJm9ZqlZnHc0TvhcZ/cuKHBFJ4sZeMhOl/j1Zk4I2dD3XwNuhQz8VJDlWHI5SnaSBYRkxgxSb53NRyFqVXso/vR069qmeu/GixWH1wEJCWZAUeJDIahFha+SuafBwMVq0ptPpxiXVQeJr6NiFdu+FTu2Zt0xJbhRbD0EiPJKLFwChMUCHaweveVWPQ2wMk+ILnVfyAkuyOZSuOxTc/tzwPw=="), "forcedecks_slstand_demo.csv", ".csv"},
+		        {Demo("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"), "forceframe_demo.csv", ".csv"}}),
+		    Probe = if UseDemo then [HasError = true] else try Table.RowCount(Folder.Files(DataFolder)),
+		    AllFiles =
+		        if UseDemo then DemoFiles
+		        else if Probe[HasError] then #table({"Content", "Name", "Extension"}, {})
+		        else Folder.Files(DataFolder),
+		    CsvFiles = Table.SelectRows(AllFiles, each Text.Lower([Extension]) = ".csv" and not Text.StartsWith([Name], "~$")),
+		    Read = Table.AddColumn(CsvFiles, "Data", each try Table.Buffer(Fx[ReadCsv]([Content])) otherwise null),
+		    Valid = Table.SelectRows(Read, each [Data] <> null),
+		    Tagged = Table.AddColumn(Valid, "Kind", each Fx[Kind]([Data]), type text)
+		in
+		    Table.Buffer(Table.SelectColumns(Tagged, {"Name", "Kind", "Data"}))
+	lineageTag: 8dc2ba8b-d185-5620-a2c2-6d73225f9a9b
+
+	annotation PBI_ResultType = Table
+
+expression Athletes =
+		// Athlete identity shared by every table. Not loaded as a table.
+		// Rows in any export are matched to the roster by ExternalId first, then by name; exports with
+		// no Name column fall back to "ID <ExternalId>". Every athlete then gets a stable number, and
+		// AnonymizeNames swaps real names for athlete_01, athlete_02 ... (the built-in demo athletes are
+		// public-domain cartoon characters, so the demo always shows their names)
+		let
+		    Of = (kind as text) as table =>
+		        let t = Table.SelectRows(ValdFiles, each [Kind] = kind)[Data]
+		        in if List.IsEmpty(t) then #table({}, {}) else Table.Combine(t),
+		    // First of the accepted (normalised) headers that the table has
+		    Col = (t as table, keys as list) as list =>
+		        let k = List.First(List.Select(keys, each Table.HasColumns(t, _)), null)
+		        in if k = null then List.Repeat({null}, Table.RowCount(t)) else Table.Column(t, k),
+		    NameKeys = {"name", "athlete", "athletename"},
+		    IdKeys = {"externalid"},
+		    RosterRaw = Of("roster"),
+		    RosterNames = List.Transform(Col(RosterRaw, NameKeys), Fx[CleanName]),
+		    RosterIds = List.Transform(Col(RosterRaw, IdKeys), Fx[CleanName]),
+		    IdToName = List.Accumulate(List.Zip({RosterIds, RosterNames}), [], (acc, p) =>
+		        if p{0} = null or p{1} = null or Record.HasFields(acc, p{0}) then acc else Record.AddField(acc, p{0}, p{1})),
+		    // The name an export row belongs to
+		    Resolve = (name as any, extId as any) as nullable text =>
+		        let n = Fx[CleanName](name), id = Fx[CleanName](extId)
+		        in if id <> null and Record.HasFields(IdToName, id) then Record.Field(IdToName, id)
+		           else if n <> null then n
+		           else if id <> null then "ID " & id
+		           else null,
+		    DeviceRows = List.Combine(List.Transform(
+		        Table.SelectRows(ValdFiles, each List.Contains({"cmj", "squat", "slstand", "forceframe"}, [Kind]))[Data],
+		        (t) => List.Transform(List.Zip({Col(t, NameKeys), Col(t, IdKeys)}), each Resolve(_{0}, _{1})))),
+		    AllNames = List.Sort(List.Distinct(List.RemoveNulls(RosterNames & DeviceRows))),
+		    Index = Record.FromList(List.Numbers(1, List.Count(AllNames)), AllNames),
+		    UseDemo = DataFolder = null or Text.Trim(Text.From(DataFolder)) = "",
+		    Display = (name as nullable text) as nullable text =>
+		        if name = null then null
+		        else if AnonymizeNames and not UseDemo then
+		            (if Record.HasFields(Index, name) then "athlete_" & Text.PadStart(Text.From(Record.Field(Index, name)), 2, "0") else "athlete_??")
+		        else name
+		in
+		    [Resolve = Resolve, Display = Display, Of = Of, RosterRaw = RosterRaw, Names = AllNames]
+	lineageTag: 9d1b5693-86eb-54dd-9313-7fe202802c13
+
+	annotation PBI_ResultType = Record
+

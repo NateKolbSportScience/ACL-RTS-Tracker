@@ -1,0 +1,72 @@
+table Phases
+	lineageTag: 8c35b228-5d3e-4852-9478-625dc9e42b23
+
+	column 'Phase ID'
+		dataType: string
+		lineageTag: 5624a770-30ec-4bf0-8937-f554044d7b7e
+		summarizeBy: none
+		sourceColumn: Phase ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Phase Name'
+		dataType: string
+		lineageTag: af7bb9a2-c054-4222-ae7e-61acba777fc7
+		summarizeBy: none
+		sourceColumn: Phase Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Month Start'
+		dataType: int64
+		formatString: 0
+		lineageTag: a2530d7d-0978-4fa5-92d2-c3e0ca9d747f
+		summarizeBy: none
+		sourceColumn: Month Start
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Month End'
+		dataType: int64
+		formatString: 0
+		lineageTag: 28c07bc6-185c-43fe-a6d2-b83dc5f6b32d
+		summarizeBy: none
+		sourceColumn: Month End
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Injury Type'
+		dataType: string
+		lineageTag: 2d9c54c5-fb8f-41ab-9128-50eba4ad79ec
+		summarizeBy: none
+		sourceColumn: Injury Type
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Phases = m
+		mode: import
+		source =
+				let
+				    Source = #table(
+				        {"Phase ID", "Phase Name", "Injury Type", "Month Start", "Month End"},
+				        {
+				            {"1", "Mid Rehab",   "ACL",        2, 4},
+				            {"2", "Late Rehab",  "ACL",        4, 6},
+				            {"3", "RTP",         "ACL",        6, 9},
+				            {"4", "RTS",         "ACL",        9, 12}
+				        }
+				    ),
+				    #"Changed Type" = Table.TransformColumnTypes(Source, {
+				        {"Phase ID", type text},
+				        {"Phase Name", type text},
+				        {"Injury Type", type text},
+				        {"Month Start", Int64.Type},
+				        {"Month End", Int64.Type}
+				    })
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

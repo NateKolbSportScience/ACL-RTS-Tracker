@@ -1,0 +1,377 @@
+cultureInfo en-US
+
+	linguisticMetadata =
+			{
+			  "Version": "2.0.0",
+			  "Language": "en-US",
+			  "Entities": {
+			    "criteria.metric_name": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "Criteria",
+			          "ConceptualProperty": "Metric Name"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Criteria": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "criteria.threshold": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "Criteria",
+			          "ConceptualProperty": "Threshold"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Goal": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "rts_measures.current_value": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "RTS Measures",
+			          "ConceptualProperty": "Current Value"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Latest Score": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "rts_measures.status_icon": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "RTS Measures",
+			          "ConceptualProperty": "Status Icon"
+			        }
+			      },
+			      "State": "Generated"
+			    },
+			    "rts_measures.months_postop_auto": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "RTS Measures",
+			          "ConceptualProperty": "Months Post-Op (Auto)"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Months Post-Op": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "athlete.weeks_postop_auto": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "Athlete",
+			          "ConceptualProperty": "Weeks Post-Op (Auto)"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Weeks Post-Op": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "rts_measures.ham_bar_operated_n": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "RTS Measures",
+			          "ConceptualProperty": "Ham Bar Operated (N)"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Injured": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "rts_measures.ham_bar_uninvolved_n": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "RTS Measures",
+			          "ConceptualProperty": "Ham Bar Uninvolved (N)"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Non-injured": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "rts_measures.ham_bar_lsi_": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "RTS Measures",
+			          "ConceptualProperty": "Ham Bar LSI %"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "LSI": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "rts_measures.quad_bar_operated_n": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "RTS Measures",
+			          "ConceptualProperty": "Quad Bar Operated (N)"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Injured": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "rts_measures.quad_bar_uninvolved_n": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "RTS Measures",
+			          "ConceptualProperty": "Quad Bar Uninvolved (N)"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Non-injured": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "rts_measures.quad_bar_lsi_": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "RTS Measures",
+			          "ConceptualProperty": "Quad Bar LSI %"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "LSI": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "rts_measures.ke_operated_n": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "RTS Measures",
+			          "ConceptualProperty": "KE Operated (N)"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Injured": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "rts_measures.ke_uninvolved_n": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "RTS Measures",
+			          "ConceptualProperty": "KE Uninvolved (N)"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Non-injured": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "rts_measures.kf_operated_n": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "RTS Measures",
+			          "ConceptualProperty": "KF Operated (N)"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Injured": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "rts_measures.kf_uninvolved_n": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "RTS Measures",
+			          "ConceptualProperty": "KF Uninvolved (N)"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Non-injured": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "rts_measures.hq_operated": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "RTS Measures",
+			          "ConceptualProperty": "H:Q Operated"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Injured": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    },
+			    "rts_measures.hq_uninvolved": {
+			      "Definition": {
+			        "Binding": {
+			          "ConceptualEntity": "RTS Measures",
+			          "ConceptualProperty": "H:Q Uninvolved"
+			        }
+			      },
+			      "State": "Generated",
+			      "Terms": [
+			        {
+			          "Non-injured": {
+			            "State": "Suggested",
+			            "Source": {
+			              "Type": "External",
+			              "Agent": "PowerBI.VisualColumnRename"
+			            },
+			            "Weight": 0.9
+			          }
+			        }
+			      ]
+			    }
+			  }
+			}
+		contentType: json
+

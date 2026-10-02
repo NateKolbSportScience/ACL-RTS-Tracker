@@ -1,0 +1,86 @@
+table rtp_latestSquat
+	lineageTag: 3cbc93bb-b0c0-546c-a3e5-ce95fb38223e
+
+	column Name
+		dataType: string
+		lineageTag: ebcc0539-e5c2-5714-bb7a-fc38a0acbfc1
+		summarizeBy: none
+		sourceColumn: Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: f866cdfc-794a-5753-8182-62b7d6a053db
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Eccentric Deceleration Impulse % (Asym) (%)'
+		dataType: string
+		lineageTag: f986d0f6-1d07-5cbd-b6dd-f8ca5851ae2d
+		summarizeBy: none
+		sourceColumn: Eccentric Deceleration Impulse % (Asym) (%)
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Concentric Mean Force % (Asym) (%)'
+		dataType: string
+		lineageTag: ae705f27-d4ea-5cf5-bee1-1bdc93fc606e
+		summarizeBy: none
+		sourceColumn: Concentric Mean Force % (Asym) (%)
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Ecc Decel Asym %'
+		dataType: double
+		lineageTag: dff1f74d-55aa-5a34-835f-da1837f4b754
+		summarizeBy: none
+		sourceColumn: Ecc Decel Asym %
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Conc Mean Force Asym %'
+		dataType: double
+		lineageTag: cfe69f89-306f-5d6c-8694-717b4e1c506c
+		summarizeBy: none
+		sourceColumn: Conc Mean Force Asym %
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition rtp_latestSquat = m
+		mode: import
+		source =
+				// ForceDecks squat assessments: eccentric deceleration and concentric mean force asymmetry.
+				let
+				    Spec = {
+				        {"Name", {"Name", "Athlete", "Athlete Name"}, "text"},
+				        {"ExternalId", {"ExternalId", "External Id"}, "text"},
+				        {"Date", {"Date", "Test Date"}, "date"},
+				        {"Eccentric Deceleration Impulse % (Asym) (%)", {"Eccentric Deceleration Impulse % (Asym) (%)", "Eccentric Deceleration Impulse % (Asym)"}, "text"},
+				        {"Concentric Mean Force % (Asym) (%)", {"Concentric Mean Force % (Asym) (%)", "Concentric Mean Force % (Asym)"}, "text"}
+				    },
+				    Shaped = Fx[Shape](Athletes[Of]("squat"), Spec),
+				    Rows = Table.FromRecords(Table.TransformRows(Shaped, (r) => r & [
+				        Name = Athletes[Display](Athletes[Resolve](r[Name], r[ExternalId])),
+				        #"Ecc Decel Asym %" = let a = Fx[Asym](r[#"Eccentric Deceleration Impulse % (Asym) (%)"]) in if a = null then null else Number.Abs(a),
+				        #"Conc Mean Force Asym %" = let a = Fx[Asym](r[#"Concentric Mean Force % (Asym) (%)"]) in if a = null then null else Number.Abs(a)]),
+				        Table.ColumnNames(Shaped) & {"Ecc Decel Asym %", "Conc Mean Force Asym %"}, MissingField.UseNull),
+				    Valid = Table.SelectRows(Table.RemoveColumns(Rows, {"ExternalId"}), each [Name] <> null and [Date] <> null),
+				    Typed = Table.TransformColumnTypes(Table.Distinct(Valid), {
+				        {"Name", type text}, {"Date", type date},
+				        {"Eccentric Deceleration Impulse % (Asym) (%)", type text}, {"Concentric Mean Force % (Asym) (%)", type text},
+				        {"Ecc Decel Asym %", type number}, {"Conc Mean Force Asym %", type number}})
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table
+

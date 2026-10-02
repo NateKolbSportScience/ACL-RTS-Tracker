@@ -1,0 +1,20 @@
+relationship 4c9e309e-afbd-57f6-a715-049a7a3259f9
+	fromColumn: Criteria.'Phase ID'
+	toColumn: Phases.'Phase ID'
+
+relationship 964639ef-c3b6-5671-aad9-9e9491367e5d
+	fromColumn: rtp_latestCMJ.Name
+	toColumn: Athlete.Name
+
+relationship 106f9172-ed54-56ba-b0f1-0541b9f4c10c
+	fromColumn: rtp_latestSquat.Name
+	toColumn: Athlete.Name
+
+relationship 8e861f80-57e4-504a-820b-dbef33d5918c
+	fromColumn: rtp_latestSLStand.Name
+	toColumn: Athlete.Name
+
+relationship 3132f835-bdc1-5abe-9e50-29dfd3567af7
+	fromColumn: rtp_latestForceFrames.Name
+	toColumn: Athlete.Name
+

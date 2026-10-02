@@ -1,0 +1,38 @@
+table 'CMJ Metrics'
+	lineageTag: 2f908b35-26c3-476d-8b24-30caef72b285
+
+	column 'Metric ID'
+		dataType: string
+		lineageTag: e0b36be9-ada8-40b6-854e-067630848bcf
+		summarizeBy: none
+		sourceColumn: Metric ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Metric Name'
+		dataType: string
+		lineageTag: f9388b7a-afb1-4667-8d76-c440258233e4
+		summarizeBy: none
+		sourceColumn: Metric Name
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'CMJ Metrics' = m
+		mode: import
+		source =
+				let
+				    Source = #table(
+				        {"Metric ID", "Metric Name"},
+				        {
+				            {"1", "Jump Height (cm)"},
+				            {"2", "Contraction Time (ms)"},
+				            {"3", "Peak Power / BM (W/kg)"}
+				        }
+				    )
+				in
+				    Source
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

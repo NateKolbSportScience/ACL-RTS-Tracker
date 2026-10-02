@@ -1,0 +1,144 @@
+table rtp_latestForceFrames
+	lineageTag: 92218cf8-7b2b-5bf1-87af-dfeb1f867ed4
+
+	column Name
+		dataType: string
+		lineageTag: 89b48410-d567-5178-899f-bf781c043591
+		summarizeBy: none
+		sourceColumn: Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: def92350-2547-5d98-9e9d-d504e3f07622
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Test
+		dataType: string
+		lineageTag: 07287fd2-67f2-567c-851d-e4d0e915f94e
+		summarizeBy: none
+		sourceColumn: Test
+
+		annotation SummarizationSetBy = Automatic
+
+	column Direction
+		dataType: string
+		lineageTag: ea04ada0-e3f8-5762-9d54-0ab2b0ef5c6a
+		summarizeBy: none
+		sourceColumn: Direction
+
+		annotation SummarizationSetBy = Automatic
+
+	column Position
+		dataType: string
+		lineageTag: d0442fa2-8fbf-5094-b891-87326aba0f41
+		summarizeBy: none
+		sourceColumn: Position
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'L Max Force (N)'
+		dataType: double
+		lineageTag: 05e9fc8e-4b3e-587c-a3d7-80342fb2a8a5
+		summarizeBy: none
+		sourceColumn: L Max Force (N)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'R Max Force (N)'
+		dataType: double
+		lineageTag: f1f6bacc-41b9-5d04-a9cf-f344355b6e5a
+		summarizeBy: none
+		sourceColumn: R Max Force (N)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Max Imbalance'
+		dataType: double
+		lineageTag: 577dc14b-695f-5a09-95d2-ab7060a20323
+		summarizeBy: none
+		sourceColumn: Max Imbalance
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'L Max RFD (N/s)'
+		dataType: double
+		lineageTag: b0e7731e-31f8-5198-bc46-226fba78f4c9
+		summarizeBy: none
+		sourceColumn: L Max RFD (N/s)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'R Max RFD (N/s)'
+		dataType: double
+		lineageTag: 88de36e9-0130-5e36-a1f0-ae57376f8181
+		summarizeBy: none
+		sourceColumn: R Max RFD (N/s)
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition rtp_latestForceFrames = m
+		mode: import
+		source =
+				// ForceFrame isometric tests. Prone knee flexion is recorded with the athlete face-down, so its
+				// left and right sides are swapped back to the athlete's own left and right.
+				let
+				    Spec = {
+				        {"Name", {"Name", "Athlete", "Athlete Name"}, "text"},
+				        {"ExternalId", {"ExternalId", "External Id"}, "text"},
+				        {"Date", {"Date", "Test Date"}, "date"},
+				        {"Test", {"Test"}, "text"},
+				        {"Direction", {"Direction"}, "text"},
+				        {"Position", {"Position"}, "text"},
+				        {"L Max Force (N)", {"L Max Force (N)"}, "number"},
+				        {"R Max Force (N)", {"R Max Force (N)"}, "number"},
+				        {"Max Imbalance", {"Max Imbalance", "Max Imbalance (%)"}, "number"},
+				        {"L Max RFD (N/s)", {"L Max RFD (N/s)"}, "number"},
+				        {"R Max RFD (N/s)", {"R Max RFD (N/s)"}, "number"}
+				    },
+				    Shaped = Fx[Shape](Athletes[Of]("forceframe"), Spec),
+				    Rows = Table.FromRecords(Table.TransformRows(Shaped, (r) =>
+				        let
+				            prone = r[Position] = "Knee Flexion - Prone",
+				            l = if prone then r[#"R Max Force (N)"] else r[#"L Max Force (N)"],
+				            rr = if prone then r[#"L Max Force (N)"] else r[#"R Max Force (N)"]
+				        in r & [
+				            Name = Athletes[Display](Athletes[Resolve](r[Name], r[ExternalId])),
+				            #"L Max Force (N)" = l,
+				            #"R Max Force (N)" = rr,
+				            #"L Max RFD (N/s)" = if prone then r[#"R Max RFD (N/s)"] else r[#"L Max RFD (N/s)"],
+				            #"R Max RFD (N/s)" = if prone then r[#"L Max RFD (N/s)"] else r[#"R Max RFD (N/s)"],
+				            #"Max Imbalance" = if r[#"Max Imbalance"] <> null then Number.Abs(r[#"Max Imbalance"])
+				                else if l = null or rr = null or List.Max({l, rr}) = 0 then null
+				                else Number.Abs(l - rr) / List.Max({l, rr}) * 100]),
+				        Table.ColumnNames(Shaped) & {}, MissingField.UseNull),
+				    NonZero = (x) => x <> null and x <> 0,
+				    // Drop the empty half of one-direction tests (both sides 0, e.g. knee extension "Squeeze")
+				    Valid = Table.SelectRows(Table.RemoveColumns(Rows, {"ExternalId"}), each [Name] <> null and [Date] <> null
+				        and (NonZero([#"L Max Force (N)"]) or NonZero([#"R Max Force (N)"]))),
+				    Typed = Table.TransformColumnTypes(Table.Distinct(Valid), {
+				        {"Name", type text}, {"Date", type date}, {"Test", type text}, {"Direction", type text}, {"Position", type text},
+				        {"L Max Force (N)", type number}, {"R Max Force (N)", type number}, {"Max Imbalance", type number},
+				        {"L Max RFD (N/s)", type number}, {"R Max RFD (N/s)", type number}})
+				in
+				    Typed
+
+	annotation PBI_ResultType = Table
+
